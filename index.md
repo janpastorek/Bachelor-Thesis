@@ -25,9 +25,11 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 -> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
 názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
+
 2. pripravíte si časový plán svojej práce (do 11:30 10.11.2020)
 
 -> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
+
 3. zbieranie zdrojov (do 11:30 01.12.2020)
 
 -> na baksem@lists... poslať emailom upozornenie, že je to na webovej stránke
