@@ -49,7 +49,8 @@ východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
 a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
 
 ### Zdroje
-To be done
+1. Two-player entangled games are NP-hard, Anand Natarajan, Thomas Vidick, Proceedings of CCC'18, arXiv:1710.03062
+2. The Complexity of Entangled Games, Thomas Vidick, PhD thesis, UC Berkeley 2011, https://digitalassets.lib.berkeley.edu/etd/ucb/text/Vidick_berkeley_0028E_11907.pdf
 
 ### Milestones
 
