@@ -23,22 +23,30 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 ### Structure of text - Main chapters
 
 #### * Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
+
 #### * Quantum Mechanics 
+
 #### * Non local games ( problem in details)
         *  CHSH
         *  Complexity
+
 #### * Reinforcement machine learning  (How are we going to solve this? Method )
         *  Markov Decision process
         *  Algortihm used
         *  Complexity
+       
 #### * Optimalization (How are we going to solve this?  Simulated annealing / evolutionary algortihm)
+
 #### * Implementation (How have we solved this?)
+
 #### * Analysis of obtained results
         *  CHSH 2-player
         *  CHSH multiplayer
         *  Larger games
         *  Comparison quantum vs. classic
+    
 #### * Discussion
+
 #### * Conclusion
 
 ### Deadlines, Milestones
