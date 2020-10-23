@@ -22,58 +22,56 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 ### Structure of text - Main chapters
 
-#### Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
-#### Quantum Mechanics 
-#### Non local games ( problem in details)
-*  CHSH
-*  Complexity
-#### Reinforcement machine learning  (How are we going to solve this? Method )
-*  Markov Decision process
-*  Algortihm used
-*  Complexity
-#### Optimalization (How are we going to solve this?  Simulated annealing / evolutionary algortihm)
-#### Implementation (How have we solved this?)
-#### Analysis of obtained results
-*  CHSH 2-player
-*  CHSH multiplayer
-*  Larger games
-*  Comparison quantum vs. classic
-#### Discussion
-#### Conclusion
+#### * Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
+#### * Quantum Mechanics 
+#### * Non local games ( problem in details)
+        *  CHSH
+        *  Complexity
+#### * Reinforcement machine learning  (How are we going to solve this? Method )
+        *  Markov Decision process
+        *  Algortihm used
+        *  Complexity
+#### * Optimalization (How are we going to solve this?  Simulated annealing / evolutionary algortihm)
+#### * Implementation (How have we solved this?)
+#### * Analysis of obtained results
+        *  CHSH 2-player
+        *  CHSH multiplayer
+        *  Larger games
+        *  Comparison quantum vs. classic
+#### * Discussion
+#### * Conclusion
 
-### Deadlines
+### Deadlines, Milestones
 1. webová stránka (do 11:30 29.10.2020)
 
--> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
-názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
+  -> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
+  názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
 
 2. pripravíte si časový plán svojej práce (do 11:30 10.11.2020)
 
--> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
+  -> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
 
 3. zbieranie zdrojov (do 11:30 01.12.2020)
 
--> na baksem@lists... poslať emailom upozornenie, že je to na webovej stránke
--> pripraviť si prezentáciu zdrojov a byť pripravený ju odprezentovať
-na webovú stránku umiestniť zoznam zdrojov
-podobné staršie bakalárske práce
-východiskové odborné práce
-existujúce riešenia (napr. softvér, systémy, webové portály, ...)
-manuály, učebnice, tutorialy, iné dokumenty
-vstupné údaje
-pozri tiež: otázky a odpovede
+  -> na baksem@lists... poslať emailom upozornenie, že je to na webovej stránke
+  -> pripraviť si prezentáciu zdrojov a byť pripravený ju odprezentovať
+  na webovú stránku umiestniť zoznam zdrojov
+  podobné staršie bakalárske práce
+  východiskové odborné práce
+  existujúce riešenia (napr. softvér, systémy, webové portály, ...)
+  manuály, učebnice, tutorialy, iné dokumenty
+  vstupné údaje
+  pozri tiež: otázky a odpovede
 
 4. východiská a prototyp (na známku A do 23:59 15.1.2021, inak do konca januára)
 
--> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
-východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
-a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
+  -> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
+  východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
+  a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
 
 ### Zdroje
 1. Two-player entangled games are NP-hard, Anand Natarajan, Thomas Vidick, Proceedings of CCC'18, arXiv:1710.03062
 2. The Complexity of Entangled Games, Thomas Vidick, PhD thesis, UC Berkeley 2011, https://digitalassets.lib.berkeley.edu/etd/ucb/text/Vidick_berkeley_0028E_11907.pdf
-
-### Milestones
 
 
 You can use the [editor on GitHub](https://github.com/jankopp/Bachelor-Thesis/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
