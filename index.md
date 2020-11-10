@@ -54,10 +54,14 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
   -> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
   názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
+  
+  Done
 
 2. pripravíte si časový plán svojej práce (do 11:30 10.11.2020)
 
   -> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
+  
+  Done
 
 3. zbieranie zdrojov (do 11:30 01.12.2020)
 
@@ -70,12 +74,20 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
   manuály, učebnice, tutorialy, iné dokumenty
   vstupné údaje
   pozri tiež: otázky a odpovede
+  
+  +- Done
 
-4. východiská a prototyp (na známku A do 23:59 15.1.2021, inak do konca januára)
+4. východiská a prototyp (do 15.1.2021)
 
   -> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
   východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
   a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
+  
+5. finálny program (do 15.3.2021)
+
+6. dokončovanie hlavnej časti bakalárskej práce (do 15.4.2021)
+
+7. finálne testovanie a odovzdanie práce (do 15.5.2021)
 
 ### Zdroje
 1. Two-player entangled games are NP-hard, Anand Natarajan, Thomas Vidick, Proceedings of CCC'18, arXiv:1710.03062
