@@ -92,7 +92,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 ### Zdroje
 1. Two-player entangled games are NP-hard, Anand Natarajan, Thomas Vidick, Proceedings of CCC'18, arXiv:1710.03062
 2. The Complexity of Entangled Games, Thomas Vidick, PhD thesis, UC Berkeley 2011, https://digitalassets.lib.berkeley.edu/etd/ucb/text/Vidick_berkeley_0028E_11907.pdf
-3. CHSH hra/Bellove nerovnosti [Nielsen Chuang, Vidick]  kapitola 2.6
+3. CHSH hra/Bellove nerovnosti - Quantum Computation and Quantum Information, Nielsen Chuang, Vidick, najmä kapitola 2.6
 4. Reinforcement learning https://www.udemy.com/course/artificial-intelligence-reinforcement-learning-in-python/
 5. Quantum Physics https://www.udemy.com/course/quantum-physics/
 6. Quantum Computing https://quantum.country/
