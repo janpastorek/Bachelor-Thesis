@@ -75,7 +75,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
   vstupné údaje
   pozri tiež: otázky a odpovede
   
-  +- Done
+  Done
 
 4. východiská a prototyp (do 15.1.2021)
 
