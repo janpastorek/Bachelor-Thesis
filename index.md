@@ -50,20 +50,20 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 #### * Conclusion
 
 ### Deadlines, Milestones
-## webová stránka (do 11:30 29.10.2020)
+#### webová stránka (do 11:30 29.10.2020)
 
   -> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
   názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
   
-  # Done
+  ##### Done
 
-## pripravíte si časový plán svojej práce (do 11:30 10.11.2020)
+#### pripravíte si časový plán svojej práce (do 11:30 10.11.2020)
 
   -> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
   
-  # Done
+  ##### Done
 
-## zbieranie zdrojov (do 11:30 01.12.2020)
+#### zbieranie zdrojov (do 11:30 01.12.2020)
 
   -> na baksem@lists... poslať emailom upozornenie, že je to na webovej stránke
   -> pripraviť si prezentáciu zdrojov a byť pripravený ju odprezentovať
@@ -75,19 +75,19 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
   vstupné údaje
   pozri tiež: otázky a odpovede
   
-  # Done
+  ##### Done
 
-## východiská a prototyp (do 15.1.2021)
+#### východiská a prototyp (do 15.1.2021)
 
   -> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
   východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
   a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
   
-## finálny program (do 15.3.2021)
+#### finálny program (do 15.3.2021)
 
-## dokončovanie hlavnej časti bakalárskej práce (do 15.4.2021)
+#### dokončovanie hlavnej časti bakalárskej práce (do 15.4.2021)
 
-## finálne testovanie a odovzdanie práce (do 15.5.2021)
+#### finálne testovanie a odovzdanie práce (do 15.5.2021)
 
 ### Zdroje
 Prezentácia - https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/view?utm_content=DAEPEqLIsWM&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton
