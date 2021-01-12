@@ -93,7 +93,7 @@ class Environment:
         self.accuracy = 0.25
         self.num_players = 2
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
-
+        self.max_acc = 0.25
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
@@ -189,13 +189,17 @@ class Environment:
         reward = rozdiel_acc * 100
 
         # skonci, ak uz ma maximalny pocet bran alebo presiahol pozadovanu uroven self.accuracy
-        if self.accuracy >= 0.83:
-            done = True
-            self.counter = 1
-            reward += 50 * (1 / (len(self.history_actions) + 1))
+
+
+
+        if self.accuracy >= self.max_acc:
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (len(self.history_actions) + 1))
+
 
         if self.counter == self.max_gates:
             done = True
+            reward += 50 * (1 / (len(self.history_actions) + 1))
             self.counter = 1
 
         # self.rew_hist.append(self.accuracy)
@@ -351,63 +355,64 @@ class Game:
 
         return portfolio_value
 
+if __name__ == '__main__':
 
-ACTIONS2 = ['r' + str(180/16 * i) for i in range(0,9)]
-ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,9)]
-ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
-PERSON = ['a', 'b']
-QUESTION = ['0', '1']
+    ACTIONS2 = ['r' + str(180/16 * i) for i in range(0,9)]
+    ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,9)]
+    ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+    PERSON = ['a', 'b']
+    QUESTION = ['0', '1']
 
-ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2] # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2] # place one gate at some place
 
-N = 6000
-n_questions = 4
-tactic = [[1, 0, 0, 1],
-          [1, 0, 0, 1],
-          [1, 0, 0, 1],
-          [0, 1, 1, 0]]
-max_gates = 10
+    N = 6000
+    n_questions = 4
+    tactic = [[1, 0, 0, 1],
+              [1, 0, 0, 1],
+              [1, 0, 0, 1],
+              [0, 1, 1, 0]]
+    max_gates = 10
 
-env = Environment(n_questions,tactic, max_gates)
+    env = Environment(n_questions,tactic, max_gates)
 
-# (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.9 , 1 ,0.01,  0.9995, 0.001 , 0.9)
-scaler = get_scaler(env, N)
-batch_size = 128
+    # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
+    agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.9 , 1 ,0.01,  0.9995, 0.001 , 0.9)
+    scaler = get_scaler(env, N)
+    batch_size = 128
 
-# store the final value of the portfolio (end of episode)
-game = Game(scaler)
-portfolio_value, rewards = game.evaluate_train(N, agent, env)
+    # store the final value of the portfolio (end of episode)
+    game = Game(scaler)
+    portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
-# plot relevant information
-fig_dims = (10, 6)
+    # plot relevant information
+    fig_dims = (10, 6)
 
-fig, ax = plt.subplots(figsize=fig_dims)
-plt.xlabel('Epochs')
-plt.ylabel('Reward')
+    fig, ax = plt.subplots(figsize=fig_dims)
+    plt.xlabel('Epochs')
+    plt.ylabel('Reward')
 
-plt.plot(rewards)
-plt.show()
+    plt.plot(rewards)
+    plt.show()
 
-fig_dims = (10, 6)
+    fig_dims = (10, 6)
 
-fig, ax = plt.subplots(figsize=fig_dims)
-plt.axhline(y=0.853, color='r', linestyle='-')
-plt.axhline(y=0.75, color='r', linestyle='-')
-plt.xlabel('Epochs')
-plt.ylabel('Win rate')
-plt.plot(portfolio_value)
-plt.show()
-# save portfolio value for each episode
-np.save(f'train.npy', portfolio_value)
+    fig, ax = plt.subplots(figsize=fig_dims)
+    plt.axhline(y=0.853, color='r', linestyle='-')
+    plt.axhline(y=0.75, color='r', linestyle='-')
+    plt.xlabel('Epochs')
+    plt.ylabel('Win rate')
+    plt.plot(portfolio_value)
+    plt.show()
+    # save portfolio value for each episode
+    np.save(f'train.npy', portfolio_value)
 
-portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
-print(portfolio_value)
+    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
+    print(portfolio_value)
 
-a = np.load(f'train.npy')
+    a = np.load(f'train.npy')
 
-print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
+    print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
 
 
-plt.plot(a)
-plt.show()
+    plt.plot(a)
+    plt.show()
