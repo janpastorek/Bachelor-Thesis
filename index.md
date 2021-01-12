@@ -96,9 +96,14 @@ Prezentácia - https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/v
 2. The Complexity of Entangled Games, Thomas Vidick, PhD thesis, UC Berkeley 2011, https://digitalassets.lib.berkeley.edu/etd/ucb/text/Vidick_berkeley_0028E_11907.pdf
 3. CHSH hra/Bellove nerovnosti - Quantum Computation and Quantum Information, Nielsen Chuang, Vidick, najmä kapitola 2.6
 4. Reinforcement learning https://www.udemy.com/course/artificial-intelligence-reinforcement-learning-in-python/
-5. Quantum Physics https://www.udemy.com/course/quantum-physics/
-6. Quantum Computing https://quantum.country/
-7. Qiskit, Numpy, Keras/PyTorch
+5. Quantum Physics, Marco Masi https://www.udemy.com/course/quantum-physics/
+6. Quantum Computing, Michael Nielsen https://quantum.country/
+7. Libraries - Qiskit, Numpy, Keras/PyTorch
+8. Marco Masi.Quantum physics: an overviewof a weird world: a primer on the conceptualfoundations of quantum physics. Independentlypublished, 2019.
+9. Urbain J Le Verrier. Theorie du mouvement demercure. InAnnales de l’Observatoire de Paris,volume 5, 1859.
+10. Albert Einstein.  The photoelectric effect.Ann.Phys, 17(132):4, 1905.
+11. John S Bell.  On the einstein podolsky rosenparadox.Physics Physique Fizika,  1(3):195,1964.
+12. Alain Aspect.  Proposed experiment to test thenonseparability of quantum mechanics.Physicalreview D, 14(8):1944, 1976.
 
 You can use the [editor on GitHub](https://github.com/jankopp/Bachelor-Thesis/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
