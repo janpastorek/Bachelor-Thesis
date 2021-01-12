@@ -14,7 +14,7 @@ def get_scaler(env,N):
     for _ in range(N):
         action = np.random.choice(ALL_POSSIBLE_ACTIONS)
         state, reward, done = env.step(action)
-        states.append(state)
+        states.append(np.round(state,2))
 
         if done:
             break
@@ -172,7 +172,7 @@ class Environment:
             print(i)
 
         # accuracy of winning CHSH game
-        before = self.accuracy.copy()
+        before = self.accuracy
         self.accuracy = self.calc_accuracy(self.tactic, result)
         # before = self.accuracy
         # win_rate = 0
@@ -186,18 +186,17 @@ class Environment:
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
-        reward = rozdiel_acc
+        reward = rozdiel_acc * 100
 
         # skonci, ak uz ma maximalny pocet bran alebo presiahol pozadovanu uroven self.accuracy
         if self.accuracy >= 0.83:
             done = True
             self.counter = 1
-            reward = 50 * (1 / (len(self.history_actions) + 1))
+            reward += 50 * (1 / (len(self.history_actions) + 1))
 
-        elif self.counter == self.max_gates:
+        if self.counter == self.max_gates:
             done = True
             self.counter = 1
-            reward = 1
 
         # self.rew_hist.append(self.accuracy)
 
@@ -209,7 +208,7 @@ class Environment:
 
         if done == False:
             self.counter += 1
-        return self.history_actions, reward, done
+        return self.repr_state, reward, done
 
 
 class Agent:
@@ -283,9 +282,9 @@ class Game:
             next_state, reward, done = env.step(action[0])
             # next_state = [s.real for s in next_state]
             # print(state)
-            next_state = self.scaler.transform([next_state])
+            next_state = self.scaler.transform([np.round(next_state,2)])
             if is_train == 'train':
-                agent.train(state, action[1], reward, next_state, done)
+                agent.train(np.round(state,2), action[1], reward, next_state, done)
             state = next_state.copy()
             rew_accum += reward
         print(env.history_actions)
@@ -353,15 +352,15 @@ class Game:
         return portfolio_value
 
 
-ACTIONS2 = ['r' + str(180/16 * i) for i in range(0,8)]
-ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,8)]
+ACTIONS2 = ['r' + str(180/16 * i) for i in range(0,9)]
+ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,9)]
 ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
 PERSON = ['a', 'b']
 QUESTION = ['0', '1']
 
-ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS] # place one gate at some place
+ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2] # place one gate at some place
 
-N = 5000
+N = 6000
 n_questions = 4
 tactic = [[1, 0, 0, 1],
           [1, 0, 0, 1],
@@ -372,7 +371,7 @@ max_gates = 10
 env = Environment(n_questions,tactic, max_gates)
 
 # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.0 , 1 ,0.01,  0.995, 0.001 , 0.9)
+agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.9 , 1 ,0.01,  0.9995, 0.001 , 0.9)
 scaler = get_scaler(env, N)
 batch_size = 128
 
