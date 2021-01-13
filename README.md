@@ -11,7 +11,7 @@ CHSH v0.1 - is just a prototype that uses fixed gates to illustrate how CHSH gam
 
 CHSH v0.2 - is full functioning CHSH game where Reinforcement learning agent tries to learn the best possible way to maximize win_accuracy and therefore CHSH value. (main version)
 
-CHSH v0.3 - is right now not functiong and will probably be deleted.
+CHSH v0.3 - is right now not functioning and will probably be deleted.
 
 CHSH v0.4 - is functioning CHSH game where Reinforcement learning agent tries to learn the best possible way to maximize win_accuracy and therefore CHSH value, this version however uses different state representation from CHSH v0.2
 
