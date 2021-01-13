@@ -1,28 +1,11 @@
 import math
-import numpy as np
 import random
+from math import sqrt, pi
+
 import matplotlib.pyplot as plt
-
-import qiskit as q
-from qiskit import IBMQ, Aer, BasicAer
-from qiskit.providers.ibmq import least_busy
-from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
-from qiskit.circuit import Gate
-from qiskit.extensions import SGate, XGate, TGate, YGate, ZGate, HGate, UGate, CXGate
-from qiskit.util import local_hardware_info
-from qiskit.providers.models import QasmBackendConfiguration
-
 import numpy as np
-from math import sqrt, cos, sin, pi
-import random
+from qiskit.extensions import UGate
 
-import itertools
-import argparse
-import re
-import os
-import pickle
-
-from sklearn.preprocessing import StandardScaler
 
 class GenAlgProblem:
 

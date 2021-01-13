@@ -14,7 +14,7 @@ def get_scaler(env,N):
     for _ in range(N):
         action = np.random.choice(ALL_POSSIBLE_ACTIONS)
         state, reward, done = env.step(action)
-        states.append(state)
+        states.append(np.round(state,2))
 
         if done:
             break
@@ -81,7 +81,7 @@ class LinearModel:
 
 class Environment:
 
-    def __init__(self, n_questions, tactic, max_gates):
+    def __init__(self, n_questions, tactic, max_gates, num_players=2):
         self.pointer = 0  # time
         self.n_questions = n_questions
         self.counter = 1
@@ -90,10 +90,10 @@ class Environment:
         self.tactic = tactic
         self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble)
         self.state = self.initial_state.copy()
-        self.accuracy = 0.25
-        self.num_players = 2
+        self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
-
+        self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
+        self.max_acc = self.accuracy
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
@@ -105,8 +105,8 @@ class Environment:
     def reset(self):
         self.counter = 1
         self.history_actions = []
-        self.accuracy = 0.25
         self.state = self.initial_state.copy() ########## INITIAL STATE
+        self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
         return self.repr_state
 
@@ -121,7 +121,7 @@ class Environment:
         for x, riadok in enumerate(tactic):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
-        win_rate = win_rate * 1 / 4
+        win_rate = win_rate * 1 / len(tactic)
         return win_rate
 
     def step(self, action):
@@ -132,7 +132,6 @@ class Environment:
 
         # play game
         result = []
-        # self.repr_state[self.pointer] = action
         self.history_actions.append(action)
 
         for g in range(self.n_questions):
@@ -146,60 +145,44 @@ class Environment:
                 gate = np.array([action[3:]],dtype=np.longdouble)
 
                 if self.a[g] == 0 and action[0:2] == 'a0':
-                    self.state[:4] = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                               self.state)
 
                 if self.a[g] == 1 and action[0:2] == 'a1':
-                    self.state[:4] = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                               self.state)
 
                 if self.b[g] == 0 and action[0:2] == 'b0':
-                    self.state[:4] = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                               self.state)
 
                 if self.b[g] == 1 and action[0:2] == 'b1':
-                    self.state[:4] = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                               self.state)
 
-            # norm = np.linalg.norm(self.state)
-            # s = self.state
-            # self.state = self.state / norm
             self.repr_state[g*self.num_players**2:(g+1)*self.num_players**2] = self.state.copy()
 
             result.append(self.measure_analytic())
 
-        for i in result:
-            print(i)
-
         # accuracy of winning CHSH game
-        before = self.accuracy.copy()
+        before = self.accuracy
         self.accuracy = self.calc_accuracy(self.tactic, result)
-        # before = self.accuracy
-        # win_rate = 0
-        # for mat in result[:-1]:
-        #     print(mat)
-        #     win_rate += 1 / 4 * (mat[0] + mat[3])
-        #
-        # win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
-        # print(result[-1])
-        # self.accuracy = win_rate
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
-        reward = rozdiel_acc
+        reward = rozdiel_acc * 100
 
-        # skonci, ak uz ma maximalny pocet bran alebo presiahol pozadovanu uroven self.accuracy
-        if self.accuracy >= 0.83:
+        # skonci, ak uz ma maximalny pocet bran
+        if self.accuracy >= self.max_acc:
+            self.max_acc = self.accuracy
+
+            reward += 5 * (1 / (self.countGates() + 1)) # alebo za countGates len(history_actuons)
+
+
+        if self.counter == self.max_gates:
             done = True
+            reward += 50 * (1 / (self.countGates() + 1))
             self.counter = 1
-            reward = 50 * (1 / (len(self.history_actions) + 1))
-
-        elif self.counter == self.max_gates:
-            done = True
-            self.counter = 1
-            reward = 1
-
-        # self.rew_hist.append(self.accuracy)
 
         print("acc: ", end="")
         print(self.accuracy)
@@ -209,7 +192,15 @@ class Environment:
 
         if done == False:
             self.counter += 1
-        return self.history_actions, reward, done
+        return self.repr_state, reward, done
+
+    def countGates(self):
+        count = 0
+        for action in self.history_actions:
+            if action != "xxr0":
+                count += 1
+        return count
+
 
 
 class Agent:
@@ -281,11 +272,9 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            # next_state = [s.real for s in next_state]
-            # print(state)
-            next_state = self.scaler.transform([next_state])
+            next_state = self.scaler.transform([np.round(next_state,2)])
             if is_train == 'train':
-                agent.train(state, action[1], reward, next_state, done)
+                agent.train(np.round(state,2), action[1], reward, next_state, done)
             state = next_state.copy()
             rew_accum += reward
         print(env.history_actions)
@@ -352,63 +341,65 @@ class Game:
 
         return portfolio_value
 
+if __name__ == '__main__':
 
-ACTIONS2 = ['r' + str(180/16 * i) for i in range(0,8)]
-ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,8)]
-ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
-PERSON = ['a', 'b']
-QUESTION = ['0', '1']
+    ACTIONS2 = ['r' + str(180/16 * i) for i in range(1,9)]
+    ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,9)]
+    ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+    PERSON = ['a', 'b']
+    QUESTION = ['0', '1']
 
-ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS] # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2] # place one gate at some place
+    ALL_POSSIBLE_ACTIONS.append("xxr0")
 
-N = 5000
-n_questions = 4
-tactic = [[1, 0, 0, 1],
-          [1, 0, 0, 1],
-          [1, 0, 0, 1],
-          [0, 1, 1, 0]]
-max_gates = 10
+    N = 6000
+    n_questions = 4
+    tactic = [[1, 0, 0, 1],
+              [1, 0, 0, 1],
+              [1, 0, 0, 1],
+              [0, 1, 1, 0]]
+    max_gates = 10
 
-env = Environment(n_questions,tactic, max_gates)
+    env = Environment(n_questions,tactic, max_gates)
 
-# (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.0 , 1 ,0.01,  0.995, 0.001 , 0.9)
-scaler = get_scaler(env, N)
-batch_size = 128
+    # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
+    agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.9 , 1 ,0.01,  0.9995, 0.001 , 0.9)
+    scaler = get_scaler(env, N)
+    batch_size = 128
 
-# store the final value of the portfolio (end of episode)
-game = Game(scaler)
-portfolio_value, rewards = game.evaluate_train(N, agent, env)
+    # store the final value of the portfolio (end of episode)
+    game = Game(scaler)
+    portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
-# plot relevant information
-fig_dims = (10, 6)
+    # plot relevant information
+    fig_dims = (10, 6)
 
-fig, ax = plt.subplots(figsize=fig_dims)
-plt.xlabel('Epochs')
-plt.ylabel('Reward')
+    fig, ax = plt.subplots(figsize=fig_dims)
+    plt.xlabel('Epochs')
+    plt.ylabel('Reward')
 
-plt.plot(rewards)
-plt.show()
+    plt.plot(rewards)
+    plt.show()
 
-fig_dims = (10, 6)
+    fig_dims = (10, 6)
 
-fig, ax = plt.subplots(figsize=fig_dims)
-plt.axhline(y=0.853, color='r', linestyle='-')
-plt.axhline(y=0.75, color='r', linestyle='-')
-plt.xlabel('Epochs')
-plt.ylabel('Win rate')
-plt.plot(portfolio_value)
-plt.show()
-# save portfolio value for each episode
-np.save(f'train.npy', portfolio_value)
+    fig, ax = plt.subplots(figsize=fig_dims)
+    plt.axhline(y=0.853, color='r', linestyle='-')
+    plt.axhline(y=0.75, color='r', linestyle='-')
+    plt.xlabel('Epochs')
+    plt.ylabel('Win rate')
+    plt.plot(portfolio_value)
+    plt.show()
+    # save portfolio value for each episode
+    np.save(f'train.npy', portfolio_value)
 
-portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
-print(portfolio_value)
+    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
+    print(portfolio_value)
 
-a = np.load(f'train.npy')
+    a = np.load(f'train.npy')
 
-print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
+    print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
 
 
-plt.plot(a)
-plt.show()
+    plt.plot(a)
+    plt.show()
