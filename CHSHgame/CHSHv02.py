@@ -90,10 +90,10 @@ class Environment:
         self.tactic = tactic
         self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble)
         self.state = self.initial_state.copy()
-        self.accuracy = 0.25
         self.num_players = 2
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
-        self.max_acc = 0.25
+        self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
+        self.max_acc = self.accuracy
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
@@ -105,8 +105,8 @@ class Environment:
     def reset(self):
         self.counter = 1
         self.history_actions = []
-        self.accuracy = 0.25
         self.state = self.initial_state.copy() ########## INITIAL STATE
+        self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
         return self.repr_state
 
@@ -132,7 +132,6 @@ class Environment:
 
         # play game
         result = []
-        # self.repr_state[self.pointer] = action
         self.history_actions.append(action)
 
         for g in range(self.n_questions):
@@ -146,52 +145,34 @@ class Environment:
                 gate = np.array([action[3:]],dtype=np.longdouble)
 
                 if self.a[g] == 0 and action[0:2] == 'a0':
-                    self.state[:4] = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                               self.state)
 
                 if self.a[g] == 1 and action[0:2] == 'a1':
-                    self.state[:4] = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                               self.state)
 
                 if self.b[g] == 0 and action[0:2] == 'b0':
-                    self.state[:4] = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                               self.state)
 
                 if self.b[g] == 1 and action[0:2] == 'b1':
-                    self.state[:4] = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                               self.state[:4])
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                               self.state)
 
-            # norm = np.linalg.norm(self.state)
-            # s = self.state
-            # self.state = self.state / norm
             self.repr_state[g*self.num_players**2:(g+1)*self.num_players**2] = self.state.copy()
 
             result.append(self.measure_analytic())
 
-        for i in result:
-            print(i)
-
         # accuracy of winning CHSH game
         before = self.accuracy
         self.accuracy = self.calc_accuracy(self.tactic, result)
-        # before = self.accuracy
-        # win_rate = 0
-        # for mat in result[:-1]:
-        #     print(mat)
-        #     win_rate += 1 / 4 * (mat[0] + mat[3])
-        #
-        # win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
-        # print(result[-1])
-        # self.accuracy = win_rate
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
         reward = rozdiel_acc * 100
 
-        # skonci, ak uz ma maximalny pocet bran alebo presiahol pozadovanu uroven self.accuracy
-
-
-
+        # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
             reward += 5 * (1 / (len(self.history_actions) + 1))
@@ -201,8 +182,6 @@ class Environment:
             done = True
             reward += 50 * (1 / (len(self.history_actions) + 1))
             self.counter = 1
-
-        # self.rew_hist.append(self.accuracy)
 
         print("acc: ", end="")
         print(self.accuracy)
@@ -284,8 +263,6 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            # next_state = [s.real for s in next_state]
-            # print(state)
             next_state = self.scaler.transform([np.round(next_state,2)])
             if is_train == 'train':
                 agent.train(np.round(state,2), action[1], reward, next_state, done)
