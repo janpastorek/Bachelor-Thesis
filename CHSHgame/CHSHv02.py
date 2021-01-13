@@ -81,7 +81,7 @@ class LinearModel:
 
 class Environment:
 
-    def __init__(self, n_questions, tactic, max_gates):
+    def __init__(self, n_questions, tactic, max_gates, num_players=2):
         self.pointer = 0  # time
         self.n_questions = n_questions
         self.counter = 1
@@ -90,7 +90,7 @@ class Environment:
         self.tactic = tactic
         self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble)
         self.state = self.initial_state.copy()
-        self.num_players = 2
+        self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
         self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
         self.max_acc = self.accuracy
@@ -121,7 +121,7 @@ class Environment:
         for x, riadok in enumerate(tactic):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
-        win_rate = win_rate * 1 / 4
+        win_rate = win_rate * 1 / len(tactic)
         return win_rate
 
     def step(self, action):
@@ -175,12 +175,13 @@ class Environment:
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (len(self.history_actions) + 1))
+
+            reward += 5 * (1 / (self.countGates() + 1)) # alebo za countGates len(history_actuons)
 
 
         if self.counter == self.max_gates:
             done = True
-            reward += 50 * (1 / (len(self.history_actions) + 1))
+            reward += 50 * (1 / (self.countGates() + 1))
             self.counter = 1
 
         print("acc: ", end="")
@@ -192,6 +193,14 @@ class Environment:
         if done == False:
             self.counter += 1
         return self.repr_state, reward, done
+
+    def countGates(self):
+        count = 0
+        for action in self.history_actions:
+            if action != "xxr0":
+                count += 1
+        return count
+
 
 
 class Agent:
@@ -334,13 +343,14 @@ class Game:
 
 if __name__ == '__main__':
 
-    ACTIONS2 = ['r' + str(180/16 * i) for i in range(0,9)]
+    ACTIONS2 = ['r' + str(180/16 * i) for i in range(1,9)]
     ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,9)]
     ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2] # place one gate at some place
+    ALL_POSSIBLE_ACTIONS.append("xxr0")
 
     N = 6000
     n_questions = 4
