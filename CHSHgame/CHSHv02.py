@@ -88,7 +88,7 @@ class Environment:
         self.history_actions = []
         self.max_gates = max_gates
         self.tactic = tactic
-        self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble)
+        self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble) ## FIX ME SCALABILITY, TO PARAM
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
@@ -144,19 +144,19 @@ class Environment:
             for action in self.history_actions:
                 gate = np.array([action[3:]],dtype=np.longdouble)
 
-                if self.a[g] == 0 and action[0:2] == 'a0':
+                if self.a[g] == 0 and action[0:2] == 'a0': ## FIX ME SCALABILITY, TO PARAM
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
                                                self.state)
 
-                if self.a[g] == 1 and action[0:2] == 'a1':
+                if self.a[g] == 1 and action[0:2] == 'a1': ## FIX ME SCALABILITY, TO PARAM
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
                                                self.state)
 
-                if self.b[g] == 0 and action[0:2] == 'b0':
+                if self.b[g] == 0 and action[0:2] == 'b0': ## FIX ME SCALABILITY, TO PARAM
                     self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
                                                self.state)
 
-                if self.b[g] == 1 and action[0:2] == 'b1':
+                if self.b[g] == 1 and action[0:2] == 'b1': ## FIX ME SCALABILITY, TO PARAM
                     self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
                                                self.state)
 
@@ -360,7 +360,7 @@ if __name__ == '__main__':
               [0, 1, 1, 0]]
     max_gates = 10
 
-    env = Environment(n_questions,tactic, max_gates)
+    env = Environment(n_questions,tactic, max_gates) ## FIX ME SCALABILITY, TO PARAM
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.9 , 1 ,0.01,  0.9995, 0.001 , 0.9)
