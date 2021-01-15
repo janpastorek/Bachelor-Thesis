@@ -26,6 +26,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 ### Bachelor thesis
 
+<a href="Bachelor_Thesis.pdf">Download File</a>
 
 ### Structure of text - Main chapters
 
@@ -105,7 +106,3 @@ Prezentácia - https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/v
 10. Albert Einstein.  The photoelectric effect.Ann.Phys, 17(132):4, 1905.
 11. John S Bell.  On the einstein podolsky rosenparadox.Physics Physique Fizika,  1(3):195,1964.
 12. Alain Aspect.  Proposed experiment to test thenonseparability of quantum mechanics.Physicalreview D, 14(8):1944, 1976.
-
-You can use the [editor on GitHub](https://github.com/jankopp/Bachelor-Thesis/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
