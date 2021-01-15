@@ -41,7 +41,6 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
       <li>Algortihm used</li>
       <li>Complexity</li>
     </ol></li>
-<li>Non local games ( problem in details)</li>
 <li>Optimalization (How are we going to solve this?  Simulated annealing / evolutionary algortihm)</li>
 <li>Implementation (How have we solved this?)</li>
        <li>Analysis of obtained results<ol>
