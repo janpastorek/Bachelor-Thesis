@@ -24,15 +24,6 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 <a href="CHSH - code.zip">Download File</a>
 
-#### Readme before download
-CHSH v0.1 - is just a prototype that uses fixed gates(path) to illustrate how CHSH game/environment works.
-
-CHSH v0.2 - is fully functioning CHSH game where Reinforcement learning agent tries to learn the best possible way(combination of gates) to maximize win_accuracy and therefore CHSH value. (main version)
-
-CHSH v0.5 - is fully functioning CHSH game where Evolutionary algorithm optimizes 4 rotation gates (A0,B0,A1,B1) to learn the best possible way to maximize win_accuracy and therefore CHSH value.
-
-Images in file demonstrate that agent is able to learn already.
-
 ### Bachelor thesis
 
 
