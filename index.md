@@ -27,6 +27,15 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 ### Structure of text - Main chapters
 
+
+<ol>
+<li>#### * Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
+</li>
+<li>Second item</li>
+<li>Third item</li>
+<li>Fourth item</li>
+</ol>
+
 #### * Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
 
 #### * Quantum Mechanics 
