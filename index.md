@@ -29,51 +29,43 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 
 <ol>
-<li>#### * Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
+<li>Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
 </li>
-<li>Second item</li>
-<li>Third item</li>
-<li>Fourth item</li>
+<li>Quantum Mechanics </li>
+<li>Non local games ( problem in details)<ol>
+      <li>CHSH</li>
+      <li>Complexityd</li>
+    </ol></li>
+<li>Reinforcement machine learning  (How are we going to solve this? Method ) <ol>
+      <li>Markov Decision process</li>
+      <li>Algortihm used</li>
+              <li>Complexity</li>
+    </ol></li></li>
+<li>Non local games ( problem in details)</li>
+<li>Optimalization (How are we going to solve this?  Simulated annealing / evolutionary algortihm)</li>
+<li>Implementation (How have we solved this?)</li>
+       <li>Analysis of obtained results<ol>
+      <li>CHSH 2-player</li>
+      <li>CHSH multiplayer</li>
+              <li>Larger games</li>
+              <li>Comparison quantum vs. classic</li>
+    </ol></li>
+       
+       <li>Discussion</li>
+       <li>Conclusion</li>
 </ol>
 
-#### * Introduction  (what is the problem? Why it is important? Why is is interesting – non locality? FTL information transmition?  Hook reader - storytelling method)
-
-#### * Quantum Mechanics 
-
-#### * Non local games ( problem in details)
-        *  CHSH
-        *  Complexity
-
-#### * Reinforcement machine learning  (How are we going to solve this? Method )
-        *  Markov Decision process
-        *  Algortihm used
-        *  Complexity
-       
-#### * Optimalization (How are we going to solve this?  Simulated annealing / evolutionary algortihm)
-
-#### * Implementation (How have we solved this?)
-
-#### * Analysis of obtained results
-        *  CHSH 2-player
-        *  CHSH multiplayer
-        *  Larger games
-        *  Comparison quantum vs. classic
-    
-#### * Discussion
-
-#### * Conclusion
-
 ### Deadlines, Milestones
-#### webová stránka (do 11:30 29.10.2020) -> Done on time
+#### * webová stránka (do 11:30 29.10.2020) -> Done on time
 
   -> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
   názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
 
-#### pripravíte si časový plán svojej práce (do 11:30 10.11.2020)  -> Done on time
+#### * pripravíte si časový plán svojej práce (do 11:30 10.11.2020)  -> Done on time
 
   -> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
 
-#### zbieranie zdrojov (do 11:30 01.12.2020) -> Done on time
+#### * zbieranie zdrojov (do 11:30 01.12.2020) -> Done on time
 
   -> na baksem@lists... poslať emailom upozornenie, že je to na webovej stránke
   -> pripraviť si prezentáciu zdrojov a byť pripravený ju odprezentovať
@@ -85,17 +77,17 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
   vstupné údaje
   pozri tiež: otázky a odpovede
 
-#### východiská a prototyp (do 15.1.2021) -> Done on time
+#### * východiská a prototyp (do 15.1.2021) -> Done on time
 
   -> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
   východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
   a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
   
-#### finálny program (do 15.3.2021)
+#### * finálny program (do 15.3.2021)
 
-#### dokončovanie hlavnej časti bakalárskej práce (do 15.4.2021)
+#### * dokončovanie hlavnej časti bakalárskej práce (do 15.4.2021)
 
-#### finálne testovanie a odovzdanie práce (do 15.5.2021)
+#### * finálne testovanie a odovzdanie práce (do 15.5.2021)
 
 ### Zdroje
 Prezentácia - https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/view?utm_content=DAEPEqLIsWM&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton
