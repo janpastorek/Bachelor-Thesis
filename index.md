@@ -20,7 +20,7 @@ Nonlocal games are a key concept in quantum information, utilized from complexit
 ### Goal
 Optimalization of quantum strategies for non-local CHSH games via machine learning and evolutionary algorithms.
 
-### Code - Download
+### Code
 
 <a href="CHSH - code.zip">Download File</a>
 
@@ -79,7 +79,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
   vstupné údaje
   pozri tiež: otázky a odpovede
 
-#### východiská a prototyp (do 15.1.2021)
+#### východiská a prototyp (do 15.1.2021) -> Done on time
 
   -> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
   východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
