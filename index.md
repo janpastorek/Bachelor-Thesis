@@ -22,7 +22,9 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 ### Code - Download
 
-<a href="CHSHv02.py">Download File</a>
+<a href="CHSHv02.py">Download File - CHSH - discreteActions, discreteStates, LinearApproximationQlearning</a>
+<a href="CHSHv05onlyEvolutionary.py">Download File - CHSH - discreteActions, discreteStates, EvolutionaryAlgorithm</a>
+<a href="CHSHv01prototype.py">Download File - CHSH - environment prototype</a>
 
 ### Bachelor thesis
 
