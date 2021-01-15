@@ -34,7 +34,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li>Quantum Mechanics </li>
 <li>Non local games ( problem in details)<ol>
       <li>CHSH</li>
-      <li>Complexityd</li>
+      <li>Complexity</li>
     </ol></li>
 <li>Reinforcement machine learning  (How are we going to solve this? Method ) <ol>
       <li>Markov Decision process</li>
@@ -50,9 +50,8 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
               <li>Larger games</li>
               <li>Comparison quantum vs. classic</li>
     </ol></li>
-       
-       <li>Discussion</li>
-       <li>Conclusion</li>
+ <li>Discussion</li>
+ <li>Conclusion</li>
 </ol>
 
 ### Deadlines, Milestones
