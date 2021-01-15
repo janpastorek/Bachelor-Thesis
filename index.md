@@ -10,9 +10,6 @@ Machine learning for nonlocal games
 ### Supervisor
 Mgr. Daniel Nagaj, PhD.
 
-### Consultant
-Looking for
-
 ### Anotation
 Nonlocal games are a key concept in quantum information, utilized from complexity theory to certification of quantum devices. They involve two or more players that win if they provide properly correlated answers to questions. The typical example is the CHSH game, related to Bell inequalities that can be violated by quantum mechanics. In this game, quantum players have a higher winning probability than classical players. Actually determining the optimal winning probability is a difficult problem in general. In this thesis, the student will investigate a variety of nonlocal games and search for optimal quantum strategies with the help of machine learning strategies (reinforcement learning).
 
