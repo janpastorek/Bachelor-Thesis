@@ -92,7 +92,7 @@ class Environment:
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
-        self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
         self.max_acc = self.accuracy
         # input, generate "questions" in equal number
         self.a = []
@@ -106,7 +106,7 @@ class Environment:
         self.counter = 1
         self.history_actions = []
         self.state = self.initial_state.copy() ########## INITIAL STATE
-        self.accuracy = self.calc_accuracy(tactic,[self.measure_analytic() for i in range(n_questions)])
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
         return self.repr_state
 
@@ -116,13 +116,68 @@ class Environment:
         return weights
 
     # Calculates winning accuracy / win rate based on winning tactic
-    def calc_accuracy(self, tactic, result):
+    def calc_accuracy(self, result):
         win_rate = 0
-        for x, riadok in enumerate(tactic):
+        for x, riadok in enumerate(self.tactic):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
         win_rate = win_rate * 1 / len(tactic)
         return win_rate
+
+    def anneal(self, steps=100, t_start=2, t_end=0.001):
+        # A function that finds the maximal value of the fitness function by
+        # executing the simulated annealing algorithm.
+        # Returns a state (e.g. x) for which fitness(x) is maximal.
+        ### YOUR CODE GOES HERE ###
+        x = self.random_state()
+        t = t_start
+        for i in range(steps):
+          neighbor = random.choice(self.neighbors(x))
+          ΔE = self.fitness(neighbor) - self.fitness(x)
+          self.plot(x, self.fitness(x), title='Simulated annealing', temperature=t)
+          if ΔE > 0: #//neighbor is better then x
+            x = neighbor
+          elif random.random() < np.math.e**(ΔE / t):          #//neighbor is worse then x
+                x = neighbor
+          t = t_start * ( t_end / t_start) ** (i/steps)
+        return x
+
+    def fitness(self, x):
+        ...
+
+    def calculateState(self, anneal=False):
+        result = []
+        for g in range(self.n_questions):
+            # Alice - a and Bob - b share an entangled state
+            # The input to alice and bob is random
+            # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
+
+            self.state = self.initial_state.copy()  ########## INITIAL STATE
+
+            for action in self.history_actions:
+                gate = np.array([action[3:]], dtype=np.longdouble)
+
+                if self.a[g] == 0 and action[0:2] == 'a0':  ## FIX ME SCALABILITY, TO PARAM
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                           self.state)
+
+                if self.a[g] == 1 and action[0:2] == 'a1':  ## FIX ME SCALABILITY, TO PARAM
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                           self.state)
+
+                if self.b[g] == 0 and action[0:2] == 'b0':  ## FIX ME SCALABILITY, TO PARAM
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                           self.state)
+
+                if self.b[g] == 1 and action[0:2] == 'b1':  ## FIX ME SCALABILITY, TO PARAM
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                           self.state)
+
+            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
+
+            result.append(self.measure_analytic())
+        return result
+
 
     def step(self, action):
 
@@ -131,42 +186,12 @@ class Environment:
         done = False
 
         # play game
-        result = []
         self.history_actions.append(action)
-
-        for g in range(self.n_questions):
-            # Alice - a and Bob - b share an entangled state
-            # The input to alice and bob is random
-            # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
-
-            self.state = self.initial_state.copy() ########## INITIAL STATE
-
-            for action in self.history_actions:
-                gate = np.array([action[3:]],dtype=np.longdouble)
-
-                if self.a[g] == 0 and action[0:2] == 'a0': ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                               self.state)
-
-                if self.a[g] == 1 and action[0:2] == 'a1': ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                               self.state)
-
-                if self.b[g] == 0 and action[0:2] == 'b0': ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                               self.state)
-
-                if self.b[g] == 1 and action[0:2] == 'b1': ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                               self.state)
-
-            self.repr_state[g*self.num_players**2:(g+1)*self.num_players**2] = self.state.copy()
-
-            result.append(self.measure_analytic())
+        result = self.calculateState()
 
         # accuracy of winning CHSH game
         before = self.accuracy
-        self.accuracy = self.calc_accuracy(self.tactic, result)
+        self.accuracy = self.calc_accuracy(result)
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
@@ -175,13 +200,11 @@ class Environment:
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
-
-            reward += 5 * (1 / (self.countGates() + 1)) # alebo za countGates len(history_actuons)
-
+            reward += 5 * (1 / (len(self.history_actions) + 1)) # alebo za countGates len(history_actuons)
 
         if self.counter == self.max_gates:
             done = True
-            reward += 50 * (1 / (self.countGates() + 1))
+            reward += 50 * (1 / (len(self.history_actions) + 1))
             self.counter = 1
 
         print("acc: ", end="")
