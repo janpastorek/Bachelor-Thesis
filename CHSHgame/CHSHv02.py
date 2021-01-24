@@ -134,7 +134,6 @@ class Environment:
         for i in range(steps):
           neighbor = random.choice(self.neighbors(x))
           ΔE = self.fitness(neighbor) - self.fitness(x)
-          self.plot(x, self.fitness(x), title='Simulated annealing', temperature=t)
           if ΔE > 0: #//neighbor is better then x
             x = neighbor
           elif random.random() < np.math.e**(ΔE / t):          #//neighbor is worse then x
@@ -145,7 +144,16 @@ class Environment:
     def fitness(self, x):
         ...
 
-    def calculateState(self, anneal=False):
+    def neighbors(self, x, span=30, delta=0.1):
+        res = []
+        if x > -span + 3 * delta: res += [x - i * delta for i in range(1, 4)]
+        if x < span - 3 * delta: res += [x + i * delta for i in range(1, 4)]
+        return res
+
+    def random_state(self):
+        return random.randrange(0,360,0.1)
+
+    def calculateState(self, anneal, history_actions):
         result = []
         for g in range(self.n_questions):
             # Alice - a and Bob - b share an entangled state
@@ -154,8 +162,10 @@ class Environment:
 
             self.state = self.initial_state.copy()  ########## INITIAL STATE
 
-            for action in self.history_actions:
-                gate = np.array([action[3:]], dtype=np.longdouble)
+            for action in history_actions:
+                if anneal: gate = self.anneal()
+                else: gate = np.array([action[3:]], dtype=np.longdouble)
+
 
                 if self.a[g] == 0 and action[0:2] == 'a0':  ## FIX ME SCALABILITY, TO PARAM
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
@@ -187,7 +197,7 @@ class Environment:
 
         # play game
         self.history_actions.append(action)
-        result = self.calculateState()
+        result = self.calculateState(self.history_actions)
 
         # accuracy of winning CHSH game
         before = self.accuracy
@@ -200,11 +210,11 @@ class Environment:
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (len(self.history_actions) + 1)) # alebo za countGates len(history_actuons)
+            reward += 5 * (1 / (self.countGates() + 1)) # alebo za countGates len(history_actuons)
 
         if self.counter == self.max_gates:
             done = True
-            reward += 50 * (1 / (len(self.history_actions) + 1))
+            reward += 50 * (1 / (self.countGates() + 1))
             self.counter = 1
 
         print("acc: ", end="")
