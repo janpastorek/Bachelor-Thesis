@@ -4,9 +4,10 @@ from math import sqrt, pi
 import numpy as np
 from qiskit.extensions import RYGate
 from sklearn.preprocessing import StandardScaler
+from CHSHv05onlyGenetic import GenAlgProblem
 
 
-def get_scaler(env,N):
+def get_scaler(env, N):
     # return scikit-learn scaler object to scale the states
     # Note: you could also populate the replay buffer here
 
@@ -14,7 +15,7 @@ def get_scaler(env,N):
     for _ in range(N):
         action = np.random.choice(ALL_POSSIBLE_ACTIONS)
         state, reward, done = env.step(action)
-        states.append(np.round(state,2))
+        states.append(np.round(state, 2))
 
         if done:
             break
@@ -22,6 +23,7 @@ def get_scaler(env,N):
     scaler = StandardScaler()
     scaler.fit(states)
     return scaler
+
 
 class LinearModel:
     """ A linear regression model """
@@ -79,6 +81,7 @@ class LinearModel:
     def save_weights(self, filepath):
         np.savez(filepath, W=self.W, b=self.b)
 
+
 class Environment:
 
     def __init__(self, n_questions, tactic, max_gates, num_players=2):
@@ -88,12 +91,14 @@ class Environment:
         self.history_actions = []
         self.max_gates = max_gates
         self.tactic = tactic
-        self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble) ## FIX ME SCALABILITY, TO PARAM
+        self.initial_state = np.array([0, 1 / sqrt(2), 1 / sqrt(2), 0],
+                                      dtype=np.longdouble)  ## FIX ME SCALABILITY, TO PARAM
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
         self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
         self.max_acc = self.accuracy
+
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
@@ -105,9 +110,9 @@ class Environment:
     def reset(self):
         self.counter = 1
         self.history_actions = []
-        self.state = self.initial_state.copy() ########## INITIAL STATE
+        self.state = self.initial_state.copy()  ########## INITIAL STATE
         self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
-        self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
         return self.repr_state
 
     # Returns probabilities of 00,01,10,10 happening in matrix
@@ -124,69 +129,11 @@ class Environment:
         win_rate = win_rate * 1 / len(tactic)
         return win_rate
 
-    # def anneal(self, steps=100, t_start=2, t_end=0.001):
-    #     # A function that finds the maximal value of the fitness function by
-    #     # executing the simulated annealing algorithm.
-    #     # Returns a state (e.g. x) for which fitness(x) is maximal.
-    #     ### YOUR CODE GOES HERE ###
-    #     x = self.random_state()
-    #     t = t_start
-    #     for i in range(steps):
-    #       neighbor = random.choice(self.neighbors(x))
-    #       ΔE = self.fitness(neighbor) - self.fitness(x)
-    #       if ΔE > 0: #//neighbor is better then x
-    #         x = neighbor
-    #       elif random.random() < np.math.e**(ΔE / t):          #//neighbor is worse then x
-    #             x = neighbor
-    #       t = t_start * ( t_end / t_start) ** (i/steps)
-    #     return x
-    #
-    # def fitness(self, x):
-    #     ...
-    #
-    # def neighbors(self, x, span=30, delta=0.1):
-    #     res = []
-    #     if x > -span + 3 * delta: res += [x - i * delta for i in range(1, 4)]
-    #     if x < span - 3 * delta: res += [x + i * delta for i in range(1, 4)]
-    #     return res
-    #
-    # def random_state(self):
-    #     return random.randrange(-180,180,0.1)
-
-    def calculateState(self, history_actions):
-        result = []
-        for g in range(self.n_questions):
-            # Alice - a and Bob - b share an entangled state
-            # The input to alice and bob is random
-            # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
-
-            self.state = self.initial_state.copy()  ########## INITIAL STATE
-
-            for action in history_actions:
-                gate = np.array([action[3:]], dtype=np.longdouble)
-
-
-                if self.a[g] == 0 and action[0:2] == 'a0':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                           self.state)
-
-                if self.a[g] == 1 and action[0:2] == 'a1':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
-                                           self.state)
-
-                if self.b[g] == 0 and action[0:2] == 'b0':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                           self.state)
-
-                if self.b[g] == 1 and action[0:2] == 'b1':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
-                                           self.state)
-
-            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
-
-            result.append(self.measure_analytic())
-        return result
-
+    def calculateState(self):
+        GenAlg = GenAlgProblem(population_size=10, n_crossover=3, mutation_prob=0.05, state=self.initial_state,
+                               history_actions=self.history_actions, tactic=self.tactic, num_players=self.num_players)
+        self.history_actions, accuracy, self.repr_state = GenAlg.solve(5)
+        return accuracy
 
     def step(self, action):
 
@@ -196,11 +143,10 @@ class Environment:
 
         # play game
         self.history_actions.append(action)
-        result = self.calculateState(self.history_actions)
 
         # accuracy of winning CHSH game
         before = self.accuracy
-        self.accuracy = self.calc_accuracy(result)
+        self.accuracy = self.calculateState()
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
@@ -209,7 +155,7 @@ class Environment:
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1)) # alebo za countGates len(history_actuons)
+            reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
 
         if self.counter == self.max_gates:
             done = True
@@ -232,7 +178,6 @@ class Environment:
             if action != "xxr0":
                 count += 1
         return count
-
 
 
 class Agent:
@@ -278,6 +223,7 @@ class Agent:
 
 
 import warnings
+
 warnings.filterwarnings('ignore')
 import matplotlib.pyplot as plt
 import pickle
@@ -304,9 +250,9 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            next_state = self.scaler.transform([np.round(next_state,2)])
+            next_state = self.scaler.transform([np.round(next_state, 2)])
             if is_train == 'train':
-                agent.train(np.round(state,2), action[1], reward, next_state, done)
+                agent.train(np.round(state, 2), action[1], reward, next_state, done)
             state = next_state.copy()
             rew_accum += reward
         print(env.history_actions)
@@ -373,18 +319,16 @@ class Game:
 
         return portfolio_value
 
-if __name__ == '__main__':
 
-    ACTIONS2 = ['r' + str(180/16 * i) for i in range(1,9)]
-    ACTIONS = ['r' + str(- 180/16 * i) for i in range(1,9)]
-    ACTIONS2.extend(ACTIONS) # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+if __name__ == '__main__':
+    ACTIONS = ['r0']  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2] # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
 
-    N = 6000
+    N = 1000
     n_questions = 4
     tactic = [[1, 0, 0, 1],
               [1, 0, 0, 1],
@@ -392,10 +336,10 @@ if __name__ == '__main__':
               [0, 1, 1, 0]]
     max_gates = 10
 
-    env = Environment(n_questions,tactic, max_gates) ## FIX ME SCALABILITY, TO PARAM
+    env = Environment(n_questions, tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state),len(ALL_POSSIBLE_ACTIONS), 0.9 , 1 ,0.01,  0.9995, 0.001 , 0.9)
+    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0.01, 0.9995, 0.01, 0.9)
     scaler = get_scaler(env, N)
     batch_size = 128
 
@@ -431,7 +375,6 @@ if __name__ == '__main__':
     a = np.load(f'train.npy')
 
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
-
 
     plt.plot(a)
     plt.show()
