@@ -130,7 +130,7 @@ class Environment:
         return win_rate
 
     def calculateState(self):
-        GenAlg = GenAlgProblem(population_size=10, n_crossover=3, mutation_prob=0.05, state=self.initial_state,
+        GenAlg = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05, state=self.initial_state,
                                history_actions=self.history_actions, tactic=self.tactic, num_players=self.num_players)
         self.history_actions, accuracy, self.repr_state = GenAlg.solve(5)
         return accuracy
@@ -147,20 +147,27 @@ class Environment:
         # accuracy of winning CHSH game
         before = self.accuracy
         self.accuracy = self.calculateState()
+        reward = self.accuracy
 
         # reward is the increase in accuracy
-        rozdiel_acc = self.accuracy - before
-        reward = rozdiel_acc * 100
+        # rozdiel_acc = self.accuracy - before
+        # reward = rozdiel_acc * 100
 
         # skonci, ak uz ma maximalny pocet bran
-        if self.accuracy >= self.max_acc:
-            self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
+        # if self.accuracy >= self.max_acc:
+        #     self.max_acc = self.accuracy
+        #     reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
 
         if self.counter == self.max_gates:
             done = True
-            reward += 50 * (1 / (self.countGates() + 1))
+            reward = self.accuracy
+            reward += 5 * (1 / (self.countGates() + 1))
             self.counter = 1
+
+        if action == "xxr0":
+            reward += 5 * (1 / (self.countGates() + 1))
+            reward = self.accuracy
+            done = True
 
         print("acc: ", end="")
         print(self.accuracy)
@@ -328,7 +335,7 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
 
-    N = 1000
+    N = 4000
     n_questions = 4
     tactic = [[1, 0, 0, 1],
               [1, 0, 0, 1],
@@ -339,7 +346,7 @@ if __name__ == '__main__':
     env = Environment(n_questions, tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0.01, 0.9995, 0.01, 0.9)
+    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0.01, 0.9995, 0.001, 0.9)
     scaler = get_scaler(env, N)
     batch_size = 128
 
