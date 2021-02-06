@@ -121,7 +121,7 @@ class Environment:
         for x, riadok in enumerate(self.tactic):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
-        win_rate = win_rate * 1 / len(tactic)
+        win_rate = win_rate * 1 / len(self.tactic)
         return win_rate
 
     # def anneal(self, steps=100, t_start=2, t_end=0.001):

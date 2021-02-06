@@ -15,7 +15,7 @@ def get_scaler(env, N):
     for _ in range(N):
         action = np.random.choice(ALL_POSSIBLE_ACTIONS)
         state, reward, done = env.step(action)
-        states.append(np.round(state, 2))
+        states.append(np.round(state, 3))
 
         if done:
             break
@@ -98,6 +98,9 @@ class Environment:
         self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
         self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
         self.max_acc = self.accuracy
+        self.min_gates = max_gates
+
+        self.visited = dict()
 
         # input, generate "questions" in equal number
         self.a = []
@@ -130,9 +133,13 @@ class Environment:
         return win_rate
 
     def calculateState(self):
-        GenAlg = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05, state=self.initial_state,
-                               history_actions=self.history_actions, tactic=self.tactic, num_players=self.num_players)
-        self.history_actions, accuracy, self.repr_state = GenAlg.solve(5)
+        try:
+            actions, accuracy, self.repr_state = self.visited[tuple(self.history_actions)]
+        except KeyError:
+            GenAlg = GenAlgProblem(population_size=15, n_crossover=len(self.history_actions)-1, mutation_prob=0.10, state=self.initial_state,
+                                    history_actions=self.history_actions, tactic=self.tactic, num_players=self.num_players)
+            actions, accuracy, self.repr_state = GenAlg.solve(22)
+            self.visited[tuple(self.history_actions)] = actions, accuracy, self.repr_state
         return accuracy
 
     def step(self, action):
@@ -147,36 +154,38 @@ class Environment:
         # accuracy of winning CHSH game
         before = self.accuracy
         self.accuracy = self.calculateState()
-        reward = self.accuracy
+        reward = self.accuracy - before
+        reward *= 1000
 
         # reward is the increase in accuracy
         # rozdiel_acc = self.accuracy - before
         # reward = rozdiel_acc * 100
 
         # skonci, ak uz ma maximalny pocet bran
-        # if self.accuracy >= self.max_acc:
-        #     self.max_acc = self.accuracy
-        #     reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
+        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
+            if self.min_gates >= len(self.history_actions):
+                self.min_gates = len(self.history_actions)
+            self.max_acc = self.accuracy
 
-        if self.counter == self.max_gates:
+
+        if self.counter == self.max_gates or action == "xxr0":
             done = True
-            reward = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1))
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == len(self.history_actions):
+                reward += 2000 * (1 / (self.countGates() + 1)) * self.accuracy
+            else:
+                reward -= 100 * (self.countGates() + 1) / self.accuracy
             self.counter = 1
 
-        if action == "xxr0":
-            reward += 5 * (1 / (self.countGates() + 1))
-            reward = self.accuracy
-            done = True
-
-        print("acc: ", end="")
-        print(self.accuracy)
-
-        print("rew: ", end="")
-        print(reward)
+        # print("acc: ", end="")
+        # print(self.accuracy)
+        #
+        # print("rew: ", end="")
+        # print(reward)
 
         if done == False:
             self.counter += 1
+        else:
+            print(self.visited[tuple(self.history_actions)][0])
         return self.repr_state, reward, done
 
     def countGates(self):
@@ -257,12 +266,12 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            next_state = self.scaler.transform([np.round(next_state, 2)])
+            next_state = self.scaler.transform([np.round(next_state, 3)])
             if is_train == 'train':
-                agent.train(np.round(state, 2), action[1], reward, next_state, done)
+                agent.train(np.round(state, 3), action[1], reward, next_state, done)
             state = next_state.copy()
             rew_accum += reward
-        print(env.history_actions)
+        # print(env.history_actions)
         return env.accuracy, rew_accum
 
     def evaluate_train(self, N, agent, env):
@@ -277,6 +286,8 @@ class Game:
             print(e, end=' ')
             print('acc:', end=' ')
             print(val)
+            print('rew:', end=' ')
+            print(rew)
 
             portfolio_value.append(val)  # append episode end portfolio value
             rewards.append(rew)
