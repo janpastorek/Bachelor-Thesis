@@ -88,7 +88,7 @@ class Environment:
         self.history_actions = []
         self.max_gates = max_gates
         self.tactic = tactic
-        self.initial_state = np.array([0, 1 / sqrt(2), 1/ sqrt(2), 0], dtype=np.longdouble) ## FIX ME SCALABILITY, TO PARAM
+        self.initial_state = np.array([0, 1 / sqrt(2), -1/ sqrt(2), 0], dtype=np.longdouble) ## FIX ME SCALABILITY, TO PARAM
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players**2) for x in self.state], dtype=np.longdouble)
@@ -216,11 +216,11 @@ class Environment:
             reward += 50 * (1 / (self.countGates() + 1))
             self.counter = 1
 
-        print("acc: ", end="")
-        print(self.accuracy)
-
-        print("rew: ", end="")
-        print(reward)
+        # print("acc: ", end="")
+        # print(self.accuracy)
+        #
+        # print("rew: ", end="")
+        # print(reward)
 
         if done == False:
             self.counter += 1
@@ -310,6 +310,7 @@ class Game:
             state = next_state.copy()
             rew_accum += reward
         print(env.history_actions)
+        print("rew: ", rew_accum)
         return env.accuracy, rew_accum
 
     def evaluate_train(self, N, agent, env):
@@ -339,7 +340,7 @@ class Game:
 
         return portfolio_value, rewards
 
-    def evaluate_test(self, agent, n_questions, tactic, max_gates):
+    def evaluate_test(self, agent, n_questions, tactic, max_gates, env):
         co = "test"
 
         portfolio_value = []
@@ -349,9 +350,6 @@ class Game:
             # then load the previous scaler
             with open(f'scaler.pkl', 'rb') as f:
                 self.scaler = pickle.load(f)
-
-            # remake the env with test data
-            env = Environment(n_questions, tactic, max_gates)
 
             # make sure epsilon is not 1!
             # no need to run multiple episodes if epsilon = 0, it's deterministic
@@ -413,6 +411,16 @@ if __name__ == '__main__':
     plt.plot(rewards)
     plt.show()
 
+
+    fig_dims = (10, 6)
+
+    fig, ax = plt.subplots(figsize=fig_dims)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    plt.plot(agent.model.losses)
+    plt.show()
+
     fig_dims = (10, 6)
 
     fig, ax = plt.subplots(figsize=fig_dims)
@@ -425,13 +433,7 @@ if __name__ == '__main__':
     # save portfolio value for each episode
     np.save(f'train.npy', portfolio_value)
 
-    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
+    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates, env)
     print(portfolio_value)
-
     a = np.load(f'train.npy')
-
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
-
-
-    plt.plot(a)
-    plt.show()

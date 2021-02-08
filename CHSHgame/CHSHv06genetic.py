@@ -1,11 +1,15 @@
 import random
-from math import sqrt, pi
+from math import sqrt
 
 import numpy as np
-from qiskit.extensions import RYGate
 from sklearn.preprocessing import StandardScaler
 from CHSHv05onlyGenetic import GenAlgProblem
+import tensorflow as tf
+from tf_agents.agents.dqn import dqn_agent
+from tf_agents.networks import q_network
 
+from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import GridSearchCV, KFold
 
 def get_scaler(env, N):
     # return scikit-learn scaler object to scale the states
@@ -28,7 +32,7 @@ def get_scaler(env, N):
 class LinearModel:
     """ A linear regression model """
 
-    def __init__(self, input_dim, n_action):
+    def __init__(self, input_dim, n_action, alpha, momentum):
         self.W = np.random.randn(input_dim, n_action) / np.sqrt(input_dim)
         self.b = np.zeros(n_action)
 
@@ -37,6 +41,7 @@ class LinearModel:
         self.vb = 0
 
         self.losses = []
+
 
     def predict(self, X):
         # make sure X is N x D
@@ -73,6 +78,9 @@ class LinearModel:
         mse = np.mean((Yhat - Y) ** 2)
         self.losses.append(mse)
 
+    def getLoss(self):
+        return self.network.loss
+
     def load_weights(self, filepath):
         npz = np.load(filepath)
         self.W = npz['W']
@@ -81,6 +89,46 @@ class LinearModel:
     def save_weights(self, filepath):
         np.savez(filepath, W=self.W, b=self.b)
 
+class Agent:
+    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.gamma = gamma  # discount rate
+        self.epsilon = eps  # exploration rate
+        self.epsilon_min = eps_min
+        self.epsilon_decay = eps_decay
+        self.alpha = alpha
+        self.momentum = momentum
+        self.model = LinearModel(state_size, action_size, self.alpha, self.momentum)
+
+    def act(self, state):
+        if np.random.rand() <= self.epsilon:
+            choice = random.randint(0, self.action_size - 1)
+            return ALL_POSSIBLE_ACTIONS[choice], choice
+        act_values = self.model.predict(state)
+        choice = np.argmax(act_values[0])
+        return ALL_POSSIBLE_ACTIONS[choice], choice
+
+    def train(self, state, action, reward, next_state, done):
+        if done:
+            target = reward
+        else:
+            target = reward + self.gamma * np.amax(self.model.predict(next_state), axis=1)
+
+        target_full = self.model.predict(state)
+        target_full[0, action] = target
+
+        # Run one training step
+        self.model.sgd(state, target_full)
+
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
 
 class Environment:
 
@@ -100,15 +148,11 @@ class Environment:
         self.max_acc = self.accuracy
         self.min_gates = max_gates
 
+        self.optimizer = GenAlgProblem(population_size=15, n_crossover=len(self.history_actions) - 1,
+                                       mutation_prob=0.10, state=self.initial_state,
+                                       history_actions=self.history_actions, tactic=self.tactic,
+                                       num_players=self.num_players)
         self.visited = dict()
-
-        # input, generate "questions" in equal number
-        self.a = []
-        self.b = []
-        for x in range(2):
-            for y in range(2):
-                self.a.append(x)
-                self.b.append(y)
 
     def reset(self):
         self.counter = 1
@@ -132,13 +176,13 @@ class Environment:
         win_rate = win_rate * 1 / len(tactic)
         return win_rate
 
-    def calculateState(self):
+    def calculateNewStateAccuracy(self, action):
+        self.history_actions.append(action)
         try:
             actions, accuracy, self.repr_state = self.visited[tuple(self.history_actions)]
         except KeyError:
-            GenAlg = GenAlgProblem(population_size=15, n_crossover=len(self.history_actions)-1, mutation_prob=0.10, state=self.initial_state,
-                                    history_actions=self.history_actions, tactic=self.tactic, num_players=self.num_players)
-            actions, accuracy, self.repr_state = GenAlg.solve(22)
+            self.optimizer.reInitialize(self.history_actions, len(self.history_actions) - 1)
+            actions, accuracy, self.repr_state = self.optimizer.solve(22)
             self.visited[tuple(self.history_actions)] = actions, accuracy, self.repr_state
         return accuracy
 
@@ -148,33 +192,11 @@ class Environment:
         # and their response (s, t) satisfy this relationship.
         done = False
 
-        # play game
-        self.history_actions.append(action)
-
         # accuracy of winning CHSH game
-        before = self.accuracy
-        self.accuracy = self.calculateState()
-        reward = self.accuracy - before
-        reward *= 1000
-
         # reward is the increase in accuracy
-        # rozdiel_acc = self.accuracy - before
-        # reward = rozdiel_acc * 100
-
-        # skonci, ak uz ma maximalny pocet bran
-        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
-            if self.min_gates >= len(self.history_actions):
-                self.min_gates = len(self.history_actions)
-            self.max_acc = self.accuracy
-
-
-        if self.counter == self.max_gates or action == "xxr0":
-            done = True
-            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == len(self.history_actions):
-                reward += 2000 * (1 / (self.countGates() + 1)) * self.accuracy
-            else:
-                reward -= 100 * (self.countGates() + 1) / self.accuracy
-            self.counter = 1
+        accuracyBefore = self.accuracy
+        self.accuracy = self.calculateNewStateAccuracy(action)
+        reward, done = self.rewardOnlyBest(accuracyBefore, done)
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -182,10 +204,10 @@ class Environment:
         # print("rew: ", end="")
         # print(reward)
 
-        if done == False:
-            self.counter += 1
-        else:
+        if done == True:
             print(self.visited[tuple(self.history_actions)][0])
+        else:
+            self.counter += 1
         return self.repr_state, reward, done
 
     def countGates(self):
@@ -195,47 +217,39 @@ class Environment:
                 count += 1
         return count
 
+    def rewardOnlyBest(self, accuracyBefore, done):
+        # reward = self.accuracy - accuracyBefore
+        reward = 0
 
-class Agent:
-    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.gamma = gamma  # discount rate
-        self.epsilon = eps  # exploration rate
-        self.epsilon_min = eps_min
-        self.epsilon_decay = eps_decay
-        self.alpha = alpha
-        self.momentum = momentum
-        self.model = LinearModel(state_size, action_size)
+        # always award only the best (who is best changes through evolution)
+        if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
+            self.min_gates = len(self.history_actions)
+            self.max_acc = self.accuracy
+        elif np.round(self.accuracy, 2) == np.round(self.max_acc, 2):
+            if self.min_gates > len(self.history_actions):
+                self.min_gates = len(self.history_actions)
+            self.max_acc = self.accuracy
 
-    def act(self, state):
-        if np.random.rand() <= self.epsilon:
-            choice = random.randint(0, self.action_size - 1)
-            return ALL_POSSIBLE_ACTIONS[choice], choice
-        act_values = self.model.predict(state)
-        choice = np.argmax(act_values[0])
-        return ALL_POSSIBLE_ACTIONS[choice], choice
+        # skonci, ak uz ma maximalny pocet bran alebo pouzil "ukoncovaciu branu"
+        if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
+            done = True
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.countGates():
+                reward = 100 * (1 / (self.countGates() + 1)) * self.accuracy
+            # elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
+            #     reward -= 1000 * (self.countGates() + 1) / self.accuracy
+            else:
+                reward = 0
+                # reward -= 10000 * (self.countGates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
 
-    def train(self, state, action, reward, next_state, done):
-        if done:
-            target = reward
-        else:
-            target = reward + self.gamma * np.amax(self.model.predict(next_state), axis=1)
+        return reward, done
 
-        target_full = self.model.predict(state)
-        target_full[0, action] = target
+    def rewardPositiveDifference(self, accuracyBefore, done):
+        reward = self.accuracy - accuracyBefore
+        if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
+            done = True
+        return reward, done
 
-        # Run one training step
-        self.model.sgd(state, target_full, self.alpha, self.momentum)
 
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-
-    def load(self, name):
-        self.model.load_weights(name)
-
-    def save(self, name):
-        self.model.save_weights(name)
 
 
 import warnings
@@ -250,7 +264,7 @@ class Game:
     def __init__(self, scaler):
         self.scaler = scaler
 
-    def play_one_episode(self, agent, env, N, is_train):
+    def play_one_episode(self, agent, env, is_train):
         # returns a list of states and corresponding returns
         # in this version we will NOT use "exploring starts" method
         # instead we will explore using an epsilon-soft policy
@@ -281,7 +295,7 @@ class Game:
         rewards = []
 
         for e in range(N):
-            val, rew = self.play_one_episode(agent, env, N, co)
+            val, rew = self.play_one_episode(agent, env, co)
             print('episode:', end=' ')
             print(e, end=' ')
             print('acc:', end=' ')
@@ -303,7 +317,7 @@ class Game:
 
         return portfolio_value, rewards
 
-    def evaluate_test(self, agent, n_questions, tactic, max_gates):
+    def evaluate_test(self, agent, n_questions, tactic, max_gates, env):
         co = "test"
 
         portfolio_value = []
@@ -313,9 +327,6 @@ class Game:
             # then load the previous scaler
             with open(f'scaler.pkl', 'rb') as f:
                 self.scaler = pickle.load(f)
-
-            # remake the env with test data
-            env = Environment(n_questions, tactic, max_gates)
 
             # make sure epsilon is not 1!
             # no need to run multiple episodes if epsilon = 0, it's deterministic
@@ -327,10 +338,8 @@ class Game:
         # play the game num_episodes times
 
         for e in range(N):
-            val = self.play_one_episode(agent, env, N, co)
-            print('episode:', end=' ')
-            print(e, end=' ')
-            print('value:', end=' ')
+            val = self.play_one_episode(agent, env, co)
+            print('Test value:', end=' ')
             print(val)
 
             portfolio_value.append(val)  # append episode end portfolio value
@@ -343,7 +352,8 @@ if __name__ == '__main__':
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in
+                            ACTIONS]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
 
     N = 4000
@@ -354,10 +364,10 @@ if __name__ == '__main__':
               [0, 1, 1, 0]]
     max_gates = 10
 
-    env = Environment(n_questions, tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
+    env = Environment(n_questions, tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0.01, 0.9995, 0.001, 0.9)
+    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.0, 1, 0.01, 0.995, 1, 0.5)
     scaler = get_scaler(env, N)
     batch_size = 128
 
@@ -366,6 +376,7 @@ if __name__ == '__main__':
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information
+    # reward
     fig_dims = (10, 6)
 
     fig, ax = plt.subplots(figsize=fig_dims)
@@ -375,6 +386,18 @@ if __name__ == '__main__':
     plt.plot(rewards)
     plt.show()
 
+    # agent loss function
+
+    fig_dims = (10, 6)
+
+    fig, ax = plt.subplots(figsize=fig_dims)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    plt.plot(agent.model.getLoss())
+    plt.show()
+
+    # win rate
     fig_dims = (10, 6)
 
     fig, ax = plt.subplots(figsize=fig_dims)
@@ -384,15 +407,10 @@ if __name__ == '__main__':
     plt.ylabel('Win rate')
     plt.plot(portfolio_value)
     plt.show()
+
     # save portfolio value for each episode
     np.save(f'train.npy', portfolio_value)
-
-    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
+    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates, env)
     print(portfolio_value)
-
     a = np.load(f'train.npy')
-
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
-
-    plt.plot(a)
-    plt.show()
