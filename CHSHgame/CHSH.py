@@ -117,7 +117,7 @@ class Game:
         self.scaler = scaler
         self.roundTo = roundTo
 
-    def play_one_episode(self, agent, env, is_train):
+    def play_one_episode(self, agent, env, DO):
         # returns a list of states and corresponding returns
         # in this version we will NOT use "exploring starts" method
         # instead we will explore using an epsilon-soft policy
@@ -134,7 +134,7 @@ class Game:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
             next_state = self.scaler.transform([np.round(next_state, self.roundTo)])
-            if is_train == 'train':
+            if DO == 'train':
                 agent.train(np.round(state, self.roundTo), action[1], reward, next_state, done)
             state = next_state.copy()
             rew_accum += reward
@@ -142,13 +142,13 @@ class Game:
         return env.accuracy, rew_accum
 
     def evaluate_train(self, N, agent, env):
-        co = "train"
+        DO = "train"
 
         portfolio_value = []
         rewards = []
 
         for e in range(N):
-            val, rew = self.play_one_episode(agent, env, N, co)
+            val, rew = self.play_one_episode(agent, env, DO)
             print('episode:', end=' ')
             print(e, end=' ')
             print('acc:', end=' ')
@@ -160,7 +160,7 @@ class Game:
             rewards.append(rew)
 
         # save the weights when we are done
-        if co == 'train':
+        if DO == 'train':
             # # save the DQN
             agent.save(f'linear.npz')
 
@@ -171,10 +171,10 @@ class Game:
         return portfolio_value, rewards
 
     def evaluate_test(self, agent, n_questions, tactic, max_gates, env):
-        co = "test"
+        DO = "test"
 
         portfolio_value = []
-        if co == 'test':
+        if DO == 'test':
             N = 1
 
             # then load the previous scaler
@@ -191,7 +191,8 @@ class Game:
         # play the game num_episodes times
 
         for e in range(N):
-            val = self.play_one_episode(agent, env, co)
+            env.reset()
+            val = self.play_one_episode(agent, env, DO)
             print('Test value:', end=' ')
             print(val)
 

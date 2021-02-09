@@ -1,9 +1,8 @@
-import random
-import abc
 from math import sqrt, pi
 
 import numpy as np
 from qiskit.extensions import RYGate
+
 import CHSH
 from CHSH import Game, get_scaler, Agent
 
@@ -11,14 +10,13 @@ from CHSH import Game, get_scaler, Agent
 class Environment(CHSH.abstractEnvironment):
 
     def __init__(self, n_questions, tactic, max_gates, num_players=2):
-        self.pointer = 0  # time
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
         self.tactic = tactic
         self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
-                                      dtype=np.longdouble)  ## FIX ME SCALABILITY, TO PARAM
+                                      dtype=np.longdouble)
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
@@ -98,9 +96,10 @@ class Environment(CHSH.abstractEnvironment):
             self.max_acc = self.accuracy
             reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
 
-        if self.counter == self.max_gates:
+        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
-            reward += 50 * (1 / (self.countGates() + 1))
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
+                reward += 50 * (1 / (self.countGates() + 1))
             self.counter = 1
 
         # print("acc: ", end="")
@@ -137,17 +136,18 @@ if __name__ == '__main__':
               [1, 0, 0, 1],
               [0, 1, 1, 0]]
     max_gates = 10
-
+    roundTo = 2
     env = Environment(n_questions, tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0.01, 0.9995, 0.001, 0.9,
-                  ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS)
+    # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+                  eps_decay=0.995, alpha=0.01, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=roundTo)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler)
+    game = Game(scaler, roundTo=roundTo)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information

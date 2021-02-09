@@ -132,16 +132,17 @@ if __name__ == '__main__':
               [1, 0, 0, 1],
               [0, 1, 1, 0]]
     max_gates = 10
+    roundTo = 2
 
     env = Environment(n_questions, tactic, max_gates)
-
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0, 0.995, 0.001, 0.9, ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
+                  eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=roundTo)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler)
+    game = Game(scaler, roundTo=roundTo)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information
@@ -160,9 +161,11 @@ if __name__ == '__main__':
     plt.ylabel('Win rate')
     plt.plot(portfolio_value)
     plt.show()
+
     # save portfolio value for each episode
     np.save(f'train.npy', portfolio_value)
 
+    # evaluation
     portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
     print(portfolio_value)
 

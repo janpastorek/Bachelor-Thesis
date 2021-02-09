@@ -1,11 +1,10 @@
-import random
 from math import sqrt
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from CHSHv05onlyGenetic import GenAlgProblem
+
 import CHSH
 from CHSH import get_scaler, Agent, Game
+from CHSHv05onlyGenetic import GenAlgProblem
 
 
 class Environment(CHSH.abstractEnvironment):
@@ -77,23 +76,23 @@ class Environment(CHSH.abstractEnvironment):
         return self.repr_state, reward, done
 
     def rewardOnlyBest(self, accuracyBefore, done):
-        # reward = self.accuracy - accuracyBefore
-        reward = 0
+        reward = self.accuracy - accuracyBefore
+        reward *= 100
 
         # always award only the best (who is best changes through evolution)
         if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
+            reward += 50 * (self.max_acc - self.accuracy)
             self.min_gates = len(self.history_actions)
             self.max_acc = self.accuracy
         elif np.round(self.accuracy, 2) == np.round(self.max_acc, 2):
             if self.min_gates > len(self.history_actions):
                 self.min_gates = len(self.history_actions)
-            self.max_acc = self.accuracy
 
         # skonci, ak uz ma maximalny pocet bran alebo pouzil "ukoncovaciu branu"
         if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
             done = True
             if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.countGates():
-                reward = 100 * (1 / (self.countGates() + 1)) * self.accuracy
+                reward = 500 * (1 / (self.countGates() + 1)) * self.accuracy
             # elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
             #     reward -= 1000 * (self.countGates() + 1) / self.accuracy
             else:
@@ -134,7 +133,8 @@ if __name__ == '__main__':
     env = Environment(n_questions, tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.0, 1, 0.01, 0.995, 1, 0.5, ALL_POSSIBLE_ACTIONS)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
+                  eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
     scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=discretizeByRoundintTo)
     batch_size = 128
 

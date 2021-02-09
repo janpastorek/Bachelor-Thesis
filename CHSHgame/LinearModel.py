@@ -56,4 +56,4 @@ class LinearModel:
         np.savez(filepath, W=self.W, b=self.b)
 
     def getLoss(self):
-        return self.network.loss
+        return self.losses
