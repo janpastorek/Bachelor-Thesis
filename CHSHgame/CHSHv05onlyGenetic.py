@@ -37,7 +37,8 @@ class GenAlgProblem:
     def reInitialize(self, history_actions, n_crossover):
         self.state = self.initial.copy()
         self.n_crossover = n_crossover
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble).copy()
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
+                                   dtype=np.longdouble).copy()
         self.history_actions = history_actions
         self.for_plot = []
         self.population = [self.generate_individual() for _ in range(self.population_size)]

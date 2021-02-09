@@ -15,7 +15,7 @@ from tf_agents.environments import py_environment
 from tf_agents.environments import tf_environment
 from tf_agents.environments import tf_py_environment
 from tf_agents.environments import utils
-from tf_agents.specs import array_spec, tensor_spec
+from tf_agents.specs import array_spec, tensor_spec, BoundedTensorSpec, TensorSpec, ArraySpec, BoundedArraySpec
 from tf_agents.environments import wrappers
 from tf_agents.environments import suite_gym
 from tf_agents.trajectories import time_step as ts
@@ -146,10 +146,10 @@ class Environment(py_environment.PyEnvironment):
         if self.counter == self.max_gates:
             done = True
             reward += 50 * (1 / (self.countGates() + 1))
-            return ts.termination(self.repr_state, reward)
+            return ts.termination(np.array(np.round(self.repr_state, 3)), reward)
         if done == False:
             self.counter += 1
-        return ts.transition(self.repr_state, reward, self.discount)
+        return ts.transition(np.array(np.round(self.repr_state, 3)), reward=reward, discount=self.discount)
 
     def countGates(self):
         count = 0
@@ -157,6 +157,7 @@ class Environment(py_environment.PyEnvironment):
             if action != "xxr0":
                 count += 1
         return count
+
 
 import warnings
 
@@ -172,7 +173,8 @@ if __name__ == '__main__':
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in
+                            ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     N = 1000
     num_iterations = 6000  # @param {type:"integer"}
@@ -196,6 +198,7 @@ if __name__ == '__main__':
     discount = 0.9
     eps = 0.9
     env = Environment(n_questions, tactic, max_gates, ALL_POSSIBLE_ACTIONS, discount)
+    utils.validate_py_environment(env, episodes=5)
     tf_env = tf_py_environment.TFPyEnvironment(env)
 
     # setting agent
@@ -281,6 +284,7 @@ if __name__ == '__main__':
         batch_size=batch_size,
         max_length=replay_buffer_max_length)
 
+
     def collect_step(environment, policy, buffer):
         time_step = environment.current_time_step()
         action_step = policy.action(time_step)
@@ -296,7 +300,7 @@ if __name__ == '__main__':
             collect_step(env, policy, buffer)
 
 
-    collect_data(env, random_policy, replay_buffer, initial_collect_steps)
+    collect_data(tf_env, random_policy, replay_buffer, initial_collect_steps)
 
     # # try collect data in 100 episodes
     # collect_data(tf_env, random_policy, replay_buffer, num_eval_episodes)
@@ -317,13 +321,13 @@ if __name__ == '__main__':
     agent.train_step_counter.assign(0)
 
     # Evaluate the agent's policy once before training.
-    avg_return = compute_avg_return(env, agent.policy, num_eval_episodes)
+    avg_return = compute_avg_return(tf_env, agent.policy, num_eval_episodes)
     returns = [avg_return]
 
     for _ in range(num_iterations):
 
         # Collect a few steps using collect_policy and save to the replay buffer.
-        collect_data(env, agent.collect_policy, replay_buffer, collect_steps_per_iteration)
+        collect_data(tf_env, agent.collect_policy, replay_buffer, collect_steps_per_iteration)
 
         # Sample a batch of data from the buffer and update the agent's network.
         experience, unused_info = next(iterator)
@@ -335,7 +339,7 @@ if __name__ == '__main__':
             print('step = {0}: loss = {1}'.format(step, train_loss))
 
         if step % eval_interval == 0:
-            avg_return = compute_avg_return(env, agent.policy, num_eval_episodes)
+            avg_return = compute_avg_return(tf_env, agent.policy, num_eval_episodes)
             print('step = {0}: Average Return = {1}'.format(step, avg_return))
             returns.append(avg_return)
 

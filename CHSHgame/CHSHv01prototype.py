@@ -81,9 +81,9 @@ U_bob_1 = [[cos(3 * pi / 8), sin(3 * pi / 8)],
 
 U_alice_1 = RYGate(-67.5 * np.pi / 180).to_matrix()
 U_bob_0 = [[1, 0],
-             [0, 1]]
+           [0, 1]]
 U_bob_1 = [[1, 0],
-             [0, 1]]
+           [0, 1]]
 
 
 # Alice and Bob win when their input (a, b)
@@ -140,11 +140,10 @@ for mat in result[:-1]:
 
 win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
 
-
-tactic = [[1,0,0,1],
-          [1,0,0,1],
-          [1,0,0,1],
-          [0,1,1,0]]
+tactic = [[1, 0, 0, 1],
+          [1, 0, 0, 1],
+          [1, 0, 0, 1],
+          [0, 1, 1, 0]]
 win_rate1 = 0
 for x, riadok in enumerate(tactic):
     for y, stlpec in enumerate(riadok):

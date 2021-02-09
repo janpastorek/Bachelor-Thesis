@@ -130,5 +130,38 @@ class TestCHSH(unittest.TestCase):
         best = ga.solve(50)  # you can also play with max. generations
         assert best[1] >= 0.83
 
+    def testTensorflow(self):
+        import numpy as np
+
+        from tensorflow.keras import layers, models
+
+        IMAGE_WIDTH = 128
+        IMAGE_HEIGHT = 128
+
+        model = models.Sequential()
+        model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(layers.Flatten())
+        model.add(layers.Dense(32, activation='relu'))
+        model.add(layers.Dense(4, activation='softmax'))
+
+        model.compile(optimizer='adam',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+
+        BATCH_SIZE = 32
+
+        images = np.zeros((BATCH_SIZE, IMAGE_WIDTH, IMAGE_HEIGHT, 3))
+        labels = np.zeros((BATCH_SIZE, 4))
+
+        history = model.fit(images, labels, epochs=1)
+
+    def testTensorflow1(self):
+        import tensorflow as tf
+        hello = tf.constant("hello TensorFlow!")
+
 if __name__ == "__main__":
     unittest.main()
