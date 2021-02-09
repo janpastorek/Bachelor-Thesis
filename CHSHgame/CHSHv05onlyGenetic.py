@@ -34,6 +34,15 @@ class GenAlgProblem:
                 self.a.append(x)
                 self.b.append(y)
 
+    def reInitialize(self, history_actions, n_crossover):
+        self.state = self.initial.copy()
+        self.n_crossover = n_crossover
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
+                                   dtype=np.longdouble).copy()
+        self.history_actions = history_actions
+        self.for_plot = []
+        self.population = [self.generate_individual() for _ in range(self.population_size)]
+
     def generate_individual(self):
         # Generate random individual.
         # To be implemented in subclasses
@@ -75,19 +84,19 @@ class GenAlgProblem:
             for action in x:
                 gate = np.array([action[3:]], dtype=np.longdouble)
 
-                if self.a[g] == 0 and action[0:2] == 'a0':  ## FIX ME SCALABILITY, TO PARAM
+                if self.a[g] == 0 and action[0:2] == 'a0':
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
                                            self.state)
 
-                if self.a[g] == 1 and action[0:2] == 'a1':  ## FIX ME SCALABILITY, TO PARAM
+                if self.a[g] == 1 and action[0:2] == 'a1':
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
                                            self.state)
 
-                if self.b[g] == 0 and action[0:2] == 'b0':  ## FIX ME SCALABILITY, TO PARAM
+                if self.b[g] == 0 and action[0:2] == 'b0':
                     self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
                                            self.state)
 
-                if self.b[g] == 1 and action[0:2] == 'b1':  ## FIX ME SCALABILITY, TO PARAM
+                if self.b[g] == 1 and action[0:2] == 'b1':
                     self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
                                            self.state)
 

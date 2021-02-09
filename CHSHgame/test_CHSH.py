@@ -1,5 +1,6 @@
 import unittest
 from CHSHv02 import Environment
+from CHSHv05onlyGenetic import GenAlgProblem
 import numpy as np
 from qiskit.extensions import RYGate
 from math import pi
@@ -78,7 +79,7 @@ class TestCHSH(unittest.TestCase):
             win_rate += 1 / 4 * (mat[0] + mat[3])
 
         win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
-        assert (win_rate == env.calc_accuracy(env.tactic, result))
+        assert (win_rate == env.calc_accuracy(result))
 
     def testCalcWinRate1(self):
         n_questions = 4
@@ -96,7 +97,7 @@ class TestCHSH(unittest.TestCase):
             print(mat)
             win_rate += 1 / 4 * (mat[0] + mat[3])
 
-        assert (win_rate == env.calc_accuracy(env.tactic, result))
+        assert (win_rate == env.calc_accuracy(result))
 
     def testCalcWinRate2(self):
         n_questions = 4
@@ -116,8 +117,51 @@ class TestCHSH(unittest.TestCase):
 
         win_rate += 1 / 4 * (result[-1][1] + result[-1][3])
 
-        assert (win_rate == env.calc_accuracy(env.tactic, result))
+        assert (win_rate == env.calc_accuracy(result))
 
+    def testGeneticAlg(self):
+        history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
+        tactic = [[1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [0, 1, 1, 0]]
+        ga = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
+                           tactic=tactic)
+        best = ga.solve(50)  # you can also play with max. generations
+        assert best[1] >= 0.83
+
+    def testTensorflow(self):
+        import numpy as np
+
+        from tensorflow.keras import layers, models
+
+        IMAGE_WIDTH = 128
+        IMAGE_HEIGHT = 128
+
+        model = models.Sequential()
+        model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(layers.MaxPooling2D((2, 2)))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(layers.Flatten())
+        model.add(layers.Dense(32, activation='relu'))
+        model.add(layers.Dense(4, activation='softmax'))
+
+        model.compile(optimizer='adam',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+
+        BATCH_SIZE = 32
+
+        images = np.zeros((BATCH_SIZE, IMAGE_WIDTH, IMAGE_HEIGHT, 3))
+        labels = np.zeros((BATCH_SIZE, 4))
+
+        history = model.fit(images, labels, epochs=1)
+
+    def testTensorflow1(self):
+        import tensorflow as tf
+        hello = tf.constant("hello TensorFlow!")
 
 if __name__ == "__main__":
     unittest.main()
