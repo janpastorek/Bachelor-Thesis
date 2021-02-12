@@ -92,11 +92,11 @@ class Environment(CHSH.abstractEnvironment):
         if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
             done = True
             if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.countGates():
-                reward = 500 * (1 / (self.countGates() + 1)) * self.accuracy
+                reward = 5000 * (1 / (self.countGates() + 1)) * self.accuracy
             # elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
             #     reward -= 1000 * (self.countGates() + 1) / self.accuracy
             else:
-                reward = 0
+                reward = -1000 * self.countGates() * (1 / self.accuracy)
                 # reward -= 10000 * (self.countGates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
 
         return reward, done
@@ -133,8 +133,8 @@ if __name__ == '__main__':
     env = Environment(n_questions, tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
-                  eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                  eps_decay=0.9995, alpha=0.5, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
     scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=discretizeByRoundintTo)
     batch_size = 128
 

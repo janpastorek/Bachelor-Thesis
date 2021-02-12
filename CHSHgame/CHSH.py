@@ -1,4 +1,5 @@
 from sklearn.preprocessing import StandardScaler
+from qiskit.extensions import RYGate, RZGate, RXGate, IGate
 
 
 def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=2):
@@ -55,6 +56,17 @@ class abstractEnvironment:
             if action != "xxr0":
                 count += 1
         return count
+
+    def getRGate(self, action):
+        gate = action[2:4]
+        if gate == "rx":
+            return RXGate
+        elif gate == "ry":
+            return RYGate
+        elif gate == "rz":
+            return RZGate
+        else:
+            return IGate
 
 
 import random
@@ -191,7 +203,6 @@ class Game:
         # play the game num_episodes times
 
         for e in range(N):
-            env.reset()
             val = self.play_one_episode(agent, env, DO)
             print('Test value:', end=' ')
             print(val)
@@ -199,3 +210,58 @@ class Game:
             portfolio_value.append(val)  # append episode end portfolio value
 
         return portfolio_value
+
+
+import itertools
+
+
+def generateOnlyInterestingTactics(n):
+    product = list(itertools.product([0, 1], repeat=n))
+    tactics = list(itertools.product(product, repeat=n))
+    print(len(tactics))
+    cutTactics = dict()
+    for tactic in tactics:
+        try:
+            if cutTactics[(tactic[1], tactic[0], tactic[3], tactic[2])]: pass
+        except KeyError:
+            try:
+                if cutTactics[(tactic[3], tactic[2], tactic[1], tactic[0])]: pass
+            except KeyError:
+                cutTactics[tactic] = True
+
+    print(len(cutTactics.keys()))
+    return cutTactics.keys()
+
+def playDeterministic(tactic):
+    # input, generate "questions" in equal number
+    a = []
+    b = []
+    for x in range(2):
+        for y in range(2):
+            a.append(x)
+            b.append(y)
+
+    responses= itertools.product([0,1], repeat=2)
+    for q in range(len(tactic)):
+        # play 16 different responses and evaluate each
+        question = [a[q],b[q]]
+        for response in responses:
+            # evaluate question, response according to tactic
+            ...
+
+def evaluate(question, response, tactic):
+    ...
+
+def maxEntangleDifference(n):
+    cutTactics = generateOnlyInterestingTactics(n)
+    for tactic in cutTactics:
+        # play deterministicaly this tactic
+        # play quantum mechanically this tactic
+        # calculate difference in win_rate
+        ...
+
+    # display 10 biggest difference entangled tactic games
+
+
+if __name__ == '__main__':
+    generateOnlyInterestingTactics(4)
