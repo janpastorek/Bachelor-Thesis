@@ -79,7 +79,7 @@ class Environment(py_environment.PyEnvironment):
         weights = [abs(a) ** 2 for a in self.state]
         return weights
 
-    # Calculates winning accuracy / win rate based on winning tactic
+    # Calculates winning accuracy / win rate based on winning evaluation_tactic
     def calc_accuracy(self, result):
         win_rate = 0
         for x, riadok in enumerate(self.tactic):
@@ -141,7 +141,7 @@ class Environment(py_environment.PyEnvironment):
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
+            reward += 5 * (1 / (self.countGates() + 1))  # alebo za count_gates len(history_actuons)
 
         if self.counter == self.max_gates:
             done = True

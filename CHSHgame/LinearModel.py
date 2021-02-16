@@ -55,5 +55,5 @@ class LinearModel:
     def save_weights(self, filepath):
         np.savez(filepath, W=self.W, b=self.b)
 
-    def getLoss(self):
-        return self.network.loss
+    def get_losses(self):
+        return self.losses

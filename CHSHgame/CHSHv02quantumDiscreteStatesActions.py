@@ -1,27 +1,26 @@
-import random
-import abc
 from math import sqrt, pi
 
 import numpy as np
-from qiskit.extensions import RYGate
+from qiskit.circuit.library import IGate
+
 import CHSH
 from CHSH import Game, get_scaler, Agent
 
 
 class Environment(CHSH.abstractEnvironment):
-
-    def __init__(self, n_questions, tactic, max_gates, num_players=2):
-        self.pointer = 0  # time
+    """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
+    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2):
+        super().__init__(evaluation_tactic)
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
-        self.tactic = tactic
+        self.evaluation_tactic = evaluation_tactic
         self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
-                                      dtype=np.longdouble)  ## FIX ME SCALABILITY, TO PARAM
+                                      dtype=np.float64)
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
         self.max_acc = self.accuracy
         # input, generate "questions" in equal number
@@ -32,41 +31,58 @@ class Environment(CHSH.abstractEnvironment):
                 self.a.append(x)
                 self.b.append(y)
 
+        self.velocity = 1
+
     @CHSH.override
     def reset(self):
+        self.velocity = 1
         self.counter = 1
         self.history_actions = []
-        self.state = self.initial_state.copy()  ########## INITIAL STATE
+        self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         return self.repr_state
 
-    def calculateState(self, history_actions):
+    def calculate_state(self, history_actions):
+        """ Calculates the state according to previous actions"""
         result = []
+        self.velocity = 1
+
         for g in range(self.n_questions):
             # Alice - a and Bob - b share an entangled state
             # The input to alice and bob is random
             # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
 
-            self.state = self.initial_state.copy()  ########## INITIAL STATE
+            self.state = self.initial_state.copy()
 
             for action in history_actions:
-                gate = np.array([action[3:]], dtype=np.longdouble)
 
-                if self.a[g] == 0 and action[0:2] == 'a0':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                if action == "biggerAngle":
+                    self.velocity *= 2
+                elif action == "smallerAngle":
+                    self.velocity /= 2
+
+                gate = self.get_gate(action)
+                if gate == IGate:
+                    continue
+
+                to_whom = action[0:2]
+                gate_angle = np.array([action[4:]], dtype=np.float64) * self.velocity
+
+                if self.a[g] == 0 and to_whom == 'a0':
+                    self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
                                            self.state)
 
-                if self.a[g] == 1 and action[0:2] == 'a1':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                if self.a[g] == 1 and to_whom == 'a1':
+                    self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
                                            self.state)
 
-                if self.b[g] == 0 and action[0:2] == 'b0':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                if self.b[g] == 0 and to_whom == 'b0':
+                    self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
                                            self.state)
 
-                if self.b[g] == 1 and action[0:2] == 'b1':  ## FIX ME SCALABILITY, TO PARAM
-                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                if self.b[g] == 1 and to_whom == 'b1':
+                    self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
                                            self.state)
 
             self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
@@ -83,7 +99,7 @@ class Environment(CHSH.abstractEnvironment):
 
         # play game
         self.history_actions.append(action)
-        result = self.calculateState(self.history_actions)
+        result = self.calculate_state(self.history_actions)
 
         # accuracy of winning CHSH game
         before = self.accuracy
@@ -95,13 +111,14 @@ class Environment(CHSH.abstractEnvironment):
 
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
-            self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
-
-        if self.counter == self.max_gates:
             done = True
-            reward += 50 * (1 / (self.countGates() + 1))
-            self.counter = 1
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (self.count_gates() + 1))  # alebo za count_gates len(history_actuons)
+
+        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
+            done = True
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
+                reward += 50 * (1 / (self.count_gates() + 1))
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -120,8 +137,8 @@ warnings.filterwarnings('ignore')
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    ACTIONS2 = ['r' + str(180 / 16 * i) for i in range(1, 9)]
-    ACTIONS = ['r' + str(- 180 / 16 * i) for i in range(1, 9)]
+    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
+    ACTIONS = ['r' + axis + str(- 180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -129,25 +146,27 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in
                             ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
+    ALL_POSSIBLE_ACTIONS.append("smallerAngle")
+    ALL_POSSIBLE_ACTIONS.append("biggerAngle")
 
     N = 6000
     n_questions = 4
-    tactic = [[1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [0, 1, 1, 0]]
+    evaluation_tactic = [[1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [0, 1, 1, 0]]
     max_gates = 10
-
-    env = Environment(n_questions, tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
+    round_to = 2
+    env = Environment(n_questions, evaluation_tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.9, 1, 0.01, 0.9995, 0.001, 0.9,
-                  ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+                  eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=round_to)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler)
+    game = Game(scaler, round_to=round_to)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information
@@ -181,7 +200,7 @@ if __name__ == '__main__':
     # save portfolio value for each episode
     np.save(f'train.npy', portfolio_value)
 
-    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates, env)
+    portfolio_value = game.evaluate_test(agent, env)
     print(portfolio_value)
     a = np.load(f'train.npy')
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")

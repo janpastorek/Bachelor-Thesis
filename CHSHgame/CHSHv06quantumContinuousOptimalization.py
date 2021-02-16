@@ -1,24 +1,23 @@
-import random
 from math import sqrt
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from CHSHv05onlyGenetic import GenAlgProblem
+
 import CHSH
 from CHSH import get_scaler, Agent, Game
+from CHSHv05quantumGeneticOptimalization import GenAlgProblem
 
 
 class Environment(CHSH.abstractEnvironment):
 
-    def __init__(self, n_questions, tactic, max_gates, num_players=2):
+    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2):
         self.pointer = 0  # time
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
-        self.tactic = tactic
+        self.evaluation_tactic = evaluation_tactic
         self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
-                                      dtype=np.longdouble)  ## FIX ME SCALABILITY, TO PARAM
+                                      dtype=np.longdouble)
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
@@ -28,7 +27,7 @@ class Environment(CHSH.abstractEnvironment):
 
         self.optimizer = GenAlgProblem(population_size=15, n_crossover=len(self.history_actions) - 1,
                                        mutation_prob=0.10, state=self.initial_state,
-                                       history_actions=self.history_actions, tactic=self.tactic,
+                                       history_actions=self.history_actions, evaluation_tactic=self.evaluation_tactic,
                                        num_players=self.num_players)
         self.visited = dict()
 
@@ -46,7 +45,7 @@ class Environment(CHSH.abstractEnvironment):
         try:
             actions, accuracy, self.repr_state = self.visited[tuple(self.history_actions)]
         except KeyError:
-            self.optimizer.reInitialize(self.history_actions, len(self.history_actions) - 1)
+            self.optimizer.initialize_CHSH(self.history_actions, len(self.history_actions) - 1)
             actions, accuracy, self.repr_state = self.optimizer.solve(22)
             self.visited[tuple(self.history_actions)] = actions, accuracy, self.repr_state
         return accuracy
@@ -77,28 +76,27 @@ class Environment(CHSH.abstractEnvironment):
         return self.repr_state, reward, done
 
     def rewardOnlyBest(self, accuracyBefore, done):
-        # reward = self.accuracy - accuracyBefore
-        reward = 0
+        reward = self.accuracy - accuracyBefore
+        reward *= 100
 
         # always award only the best (who is best changes through evolution)
         if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
+            reward += 50 * (self.max_acc - self.accuracy)
             self.min_gates = len(self.history_actions)
             self.max_acc = self.accuracy
         elif np.round(self.accuracy, 2) == np.round(self.max_acc, 2):
             if self.min_gates > len(self.history_actions):
                 self.min_gates = len(self.history_actions)
-            self.max_acc = self.accuracy
 
         # skonci, ak uz ma maximalny pocet bran alebo pouzil "ukoncovaciu branu"
         if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
             done = True
-            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.countGates():
-                reward = 100 * (1 / (self.countGates() + 1)) * self.accuracy
-            # elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
-            #     reward -= 1000 * (self.countGates() + 1) / self.accuracy
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.count_gates():
+                reward = 5000 * (1 / (self.count_gates() + 1)) * self.accuracy
+            elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
+                reward -= 1000 * (self.count_gates() + 1) / self.accuracy
             else:
-                reward = 0
-                # reward -= 10000 * (self.countGates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
+                reward -= 10000 * (self.count_gates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
 
         return reward, done
 
@@ -125,21 +123,22 @@ if __name__ == '__main__':
 
     N = 4000
     n_questions = 4
-    tactic = [[1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [0, 1, 1, 0]]
+    evaluation_tactic = [[1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [0, 1, 1, 0]]
     max_gates = 10
     discretizeByRoundintTo = 3
-    env = Environment(n_questions, tactic, max_gates)
+    env = Environment(n_questions, evaluation_tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(len(env.repr_state), len(ALL_POSSIBLE_ACTIONS), 0.0, 1, 0.01, 0.995, 1, 0.5, ALL_POSSIBLE_ACTIONS)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                  eps_decay=0.9995, alpha=0.5, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
     scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=discretizeByRoundintTo)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler, roundTo=discretizeByRoundintTo)
+    game = Game(scaler, round_to=discretizeByRoundintTo)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information
@@ -161,7 +160,7 @@ if __name__ == '__main__':
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
-    plt.plot(agent.model.getLoss())
+    plt.plot(agent.model.get_losses())
     plt.show()
 
     # win rate
@@ -177,7 +176,7 @@ if __name__ == '__main__':
 
     # save portfolio value for each episode
     np.save(f'train.npy', portfolio_value)
-    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates, env)
+    portfolio_value = game.evaluate_test(agent, env)
     print(portfolio_value)
     a = np.load(f'train.npy')
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
