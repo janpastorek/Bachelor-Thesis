@@ -4,23 +4,27 @@ from math import sqrt, pi
 
 import matplotlib.pyplot as plt
 import numpy as np
-from qiskit.extensions import UGate
+from qiskit.extensions import RYGate
 
 
 class GenAlgProblem:
 
     def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05,
-                 state=[0, float(1 / sqrt(2)), -float(1 / sqrt(2)), 0]):
+                 state=[0, float(1 / sqrt(2)), -float(1 / sqrt(2)), 0],
+                 history_actions=['a0r0', 'b0r0', 'a1r0', 'b1r0'], tactic=[], num_players=2):
         # Initialize the population - create population of 'size' individuals,
         # each individual is a bit string of length 'word_len'.
         self.population_size = population_size
         self.n_crossover = n_crossover
         self.mutation_prob = mutation_prob
+        self.history_actions = history_actions
         self.population = [self.generate_individual() for _ in range(self.population_size)]
+        self.num_players = num_players
         self.state = state
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
         self.initial = state
-
         self.for_plot = []
+        self.tactic = tactic
 
         # generate "questions" in equal number
         self.a = []
@@ -30,25 +34,40 @@ class GenAlgProblem:
                 self.a.append(x)
                 self.b.append(y)
 
-    # Returns probabilities of 00,01,10,10 happening in matrix
-    def measure_analytic(self):
-        choices = range(len(self.state[:4]))
-        weights = [abs(a) ** 2 for a in self.state[:4]]
-
-        return weights
+    def reInitialize(self, history_actions, n_crossover):
+        self.state = self.initial.copy()
+        self.n_crossover = n_crossover
+        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
+                                   dtype=np.longdouble).copy()
+        self.history_actions = history_actions
+        self.for_plot = []
+        self.population = [self.generate_individual() for _ in range(self.population_size)]
 
     def generate_individual(self):
         # Generate random individual.
         # To be implemented in subclasses
-
-        # tieto hyperparametre treba optimalizovat - 4brany
-        return [random.uniform(-180, 180), random.uniform(-180, 180), random.uniform(-180, 180),
-                random.uniform(-180, 180)]
+        # tieto hyperparametre treba optimalizovat - brany
+        return [str(action[0:3]) + str(random.uniform(-180, 180)) if action != 'xxr0' else 'xxr0' for action in
+                self.history_actions]
 
     def show_individual(self, x):
         # Show the given individual x, either to console or graphically.
         # To be implemented in subclasses
         print(x)
+
+    # Returns probabilities of 00,01,10,10 happening in matrix
+    def measure_analytic(self):
+        weights = [abs(a) ** 2 for a in self.state]
+        return weights
+
+    # Calculates winning accuracy / win rate based on winning tactic
+    def calc_accuracy(self, result):
+        win_rate = 0
+        for x, riadok in enumerate(self.tactic):
+            for y, stlpec in enumerate(riadok):
+                win_rate += (stlpec * result[x][y])
+        win_rate = win_rate * 1 / len(self.tactic)
+        return win_rate
 
     def fitness(self, x):
         # Returns fitness of a given individual.
@@ -58,35 +77,34 @@ class GenAlgProblem:
             # Alice and Bob share an entangled state
             # The input to alice and bob is random
             # Alice chooses her operation based on her input
-            self.state = self.initial  ########## INITIAL STATE
+            self.state = self.initial.copy()  ########## INITIAL STATE
+            self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
+                                       dtype=np.longdouble)
 
-            self.state = np.array(self.state)
+            for action in x:
+                gate = np.array([action[3:]], dtype=np.longdouble)
 
-            if self.a[g] == 0:
-                self.state[:4] = np.matmul(np.kron(UGate(x[0] * pi / 180, 0, 0).to_matrix(), np.identity(2)),
-                                           self.state[:4])
+                if self.a[g] == 0 and action[0:2] == 'a0':
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                           self.state)
 
-            elif self.a[g] == 1:
-                self.state[:4] = np.matmul(np.kron(UGate(x[1] * pi / 180, 0, 0).to_matrix(), np.identity(2)),
-                                           self.state[:4])
+                if self.a[g] == 1 and action[0:2] == 'a1':
+                    self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
+                                           self.state)
 
-            if self.b[g] == 0:
-                self.state[:4] = np.matmul(np.kron(np.identity(2), UGate(x[2] * pi / 180, 0, 0).to_matrix()),
-                                           self.state[:4])
+                if self.b[g] == 0 and action[0:2] == 'b0':
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                           self.state)
 
-            elif self.b[g] == 1:
-                self.state[:4] = np.matmul(np.kron(np.identity(2), UGate(x[3] * pi / 180, 0, 0).to_matrix()),
-                                           self.state[:4])
+                if self.b[g] == 1 and action[0:2] == 'b1':
+                    self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
+                                           self.state)
+
+            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
 
             result.append(self.measure_analytic())
-        win_rate = 0
-        for mat in result[:-1]:
-            # print(mat)
-            win_rate += 1 / 4 * (mat[0] + mat[3])
 
-        win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
-        fitness_individual = win_rate
-
+        fitness_individual = self.calc_accuracy(result)
         return fitness_individual
 
     def crossover(self, x, y, k):
@@ -128,28 +146,26 @@ class GenAlgProblem:
         for poc in range(len(potomok)):
 
             if random.random() <= prob:
-                spocitaj = list(potomok)
+                spocitaj = [float(gate[3:]) for gate in potomok]
                 priemer = sum(spocitaj) / len(spocitaj)
                 sigma_na_druhu = 0
 
                 for i in spocitaj:
                     sigma_na_druhu += (i - priemer) ** 2
 
-                sigma_na_druhu = sigma_na_druhu / (len(spocitaj) - 1) / 360  # pocitam gausovu krivku
+                sigma_na_druhu = sigma_na_druhu / (len(spocitaj)) / 360  # pocitam gausovu krivku
 
                 if random.random() > 0.5:
-                    while True:
+                    if potomok[poc] != 'xxr0':
                         nahodne = random.uniform(0, sigma_na_druhu)
-                        potomok[poc] -= nahodne
-                        break
+                        potomok[poc] = potomok[poc][:3] + str(float(potomok[poc][3:]) - nahodne)
 
                 else:
-                    while True:
+                    if potomok[poc] != 'xxr0':
                         nahodne = random.uniform(0, sigma_na_druhu)
-                        potomok[poc] += nahodne
-                        break
+                        potomok[poc] = potomok[poc][:3] + str(float(potomok[poc][3:]) + nahodne)
 
-        return potomok[:len(potomok) - 2] + [int(math.floor(potomok[-2])), int(math.floor(potomok[-1]))]
+        return potomok
 
     def mutation(self, x, prob):
         mutacia = self.number_mutation(x, prob)
@@ -214,16 +230,23 @@ class GenAlgProblem:
                 self.population.append(i)  # tu uz dotvaram celkovu novu generaciu
 
         sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=True)
-        najlepsi_zatial = self.fitness(sort_population[0])
-        self.for_plot.append(najlepsi_zatial)
-        return najlepsi_zatial  # najlepsi
+        najlepsi = sort_population[0]
+        self.for_plot.append(self.fitness(najlepsi))
+        accuracy = self.fitness(najlepsi)
+        return najlepsi, accuracy, self.repr_state  # najlepsi
 
 
 if __name__ == "__main__":
     # Solve to find optimal individual
-    ga = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05)
+    history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
+    tactic = [[1, 0, 0, 1],
+              [1, 0, 0, 1],
+              [1, 0, 0, 1],
+              [0, 1, 1, 0]]
+    ga = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
+                       tactic=tactic)
     best = ga.solve(50)  # you can also play with max. generations
-    ga.show_individual(best)
+    ga.show_individual(best[0])
 
     fig_dims = (10, 6)
 
