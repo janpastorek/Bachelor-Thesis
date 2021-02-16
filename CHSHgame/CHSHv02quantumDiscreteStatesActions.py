@@ -2,20 +2,20 @@ from math import sqrt, pi
 
 import numpy as np
 from qiskit.circuit.library import IGate
-from qiskit.extensions import RYGate, RZGate, RXGate
 
 import CHSH
 from CHSH import Game, get_scaler, Agent
 
 
 class Environment(CHSH.abstractEnvironment):
-
-    def __init__(self, n_questions, tactic, max_gates, num_players=2):
+    """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
+    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2):
+        super().__init__(evaluation_tactic)
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
-        self.tactic = tactic
+        self.evaluation_tactic = evaluation_tactic
         self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
                                       dtype=np.float64)
         self.state = self.initial_state.copy()
@@ -43,7 +43,8 @@ class Environment(CHSH.abstractEnvironment):
         self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         return self.repr_state
 
-    def calculateState(self, history_actions):
+    def calculate_state(self, history_actions):
+        """ Calculates the state according to previous actions"""
         result = []
         self.velocity = 1
 
@@ -61,7 +62,7 @@ class Environment(CHSH.abstractEnvironment):
                 elif action == "smallerAngle":
                     self.velocity /= 2
 
-                gate = self.getRGate(action)
+                gate = self.get_gate(action)
                 if gate == IGate:
                     continue
 
@@ -98,7 +99,7 @@ class Environment(CHSH.abstractEnvironment):
 
         # play game
         self.history_actions.append(action)
-        result = self.calculateState(self.history_actions)
+        result = self.calculate_state(self.history_actions)
 
         # accuracy of winning CHSH game
         before = self.accuracy
@@ -110,14 +111,14 @@ class Environment(CHSH.abstractEnvironment):
 
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
+            done = True
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1))  # alebo za countGates len(history_actuons)
+            reward += 5 * (1 / (self.count_gates() + 1))  # alebo za count_gates len(history_actuons)
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
             if np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
-                reward += 50 * (1 / (self.countGates() + 1))
-            self.counter = 1
+                reward += 50 * (1 / (self.count_gates() + 1))
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -150,22 +151,22 @@ if __name__ == '__main__':
 
     N = 6000
     n_questions = 4
-    tactic = [[1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [0, 1, 1, 0]]
+    evaluation_tactic = [[1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [0, 1, 1, 0]]
     max_gates = 10
-    roundTo = 2
-    env = Environment(n_questions, tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
+    round_to = 2
+    env = Environment(n_questions, evaluation_tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
                   eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=roundTo)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=round_to)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler, roundTo=roundTo)
+    game = Game(scaler, round_to=round_to)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information
@@ -199,7 +200,7 @@ if __name__ == '__main__':
     # save portfolio value for each episode
     np.save(f'train.npy', portfolio_value)
 
-    portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates, env)
+    portfolio_value = game.evaluate_test(agent, env)
     print(portfolio_value)
     a = np.load(f'train.npy')
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")

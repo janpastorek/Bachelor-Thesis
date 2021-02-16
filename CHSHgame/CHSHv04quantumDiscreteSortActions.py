@@ -9,13 +9,13 @@ import CHSH
 
 class Environment(CHSH.abstractEnvironment):
 
-    def __init__(self, n_questions, tactic, max_gates):
+    def __init__(self, n_questions, evaluation_tactic, max_gates):
         self.pointer = 0  # time
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = ['a0r0' for i in range(max_gates)]
         self.max_gates = max_gates
-        self.tactic = tactic
+        self.evaluation_tactic = evaluation_tactic
         self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.longdouble)
         self.state = self.initial_state.copy()
         self.accuracy = 0.25
@@ -84,7 +84,7 @@ class Environment(CHSH.abstractEnvironment):
 
         # accuracy of winning CHSH game
         before = self.accuracy
-        self.accuracy = self.calc_accuracy(self.tactic, result)
+        self.accuracy = self.calc_accuracy(self.evaluation_tactic, result)
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler, roundTo=roundTo)
+    game = Game(scaler, round_to=roundTo)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information

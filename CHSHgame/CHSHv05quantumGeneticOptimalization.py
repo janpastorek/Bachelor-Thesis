@@ -1,4 +1,3 @@
-import math
 import random
 from math import sqrt, pi
 
@@ -11,20 +10,17 @@ class GenAlgProblem:
 
     def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05,
                  state=[0, float(1 / sqrt(2)), -float(1 / sqrt(2)), 0],
-                 history_actions=['a0r0', 'b0r0', 'a1r0', 'b1r0'], tactic=[], num_players=2):
+                 history_actions=['a0r0', 'b0r0', 'a1r0', 'b1r0'], evaluation_tactic=[], num_players=2):
         # Initialize the population - create population of 'size' individuals,
         # each individual is a bit string of length 'word_len'.
         self.population_size = population_size
         self.n_crossover = n_crossover
         self.mutation_prob = mutation_prob
-        self.history_actions = history_actions
-        self.population = [self.generate_individual() for _ in range(self.population_size)]
         self.num_players = num_players
-        self.state = state
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
         self.initial = state
-        self.for_plot = []
-        self.tactic = tactic
+        self.evaluation_tactic = evaluation_tactic
+
+        self.initialize_CHSH(history_actions,n_crossover)
 
         # generate "questions" in equal number
         self.a = []
@@ -34,50 +30,49 @@ class GenAlgProblem:
                 self.a.append(x)
                 self.b.append(y)
 
-    def reInitialize(self, history_actions, n_crossover):
+    def initialize_CHSH(self, history_actions, n_crossover):
+        """ Initializes number of crossovers and CHSH environment with :param history_actions - new previous actions"""
         self.state = self.initial.copy()
         self.n_crossover = n_crossover
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
-                                   dtype=np.longdouble).copy()
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state],dtype=np.longdouble)
         self.history_actions = history_actions
         self.for_plot = []
         self.population = [self.generate_individual() for _ in range(self.population_size)]
 
     def generate_individual(self):
-        # Generate random individual.
-        # To be implemented in subclasses
+        """Generate random individual."""
         # tieto hyperparametre treba optimalizovat - brany
         return [str(action[0:3]) + str(random.uniform(-180, 180)) if action != 'xxr0' else 'xxr0' for action in
                 self.history_actions]
 
     def show_individual(self, x):
-        # Show the given individual x, either to console or graphically.
-        # To be implemented in subclasses
+        """ Show the given individual x, either to console or graphically."""
         print(x)
 
-    # Returns probabilities of 00,01,10,10 happening in matrix
     def measure_analytic(self):
+        """Returns probabilities of 00,01,10,10 happening in matrix"""
         weights = [abs(a) ** 2 for a in self.state]
         return weights
 
-    # Calculates winning accuracy / win rate based on winning tactic
+
+
     def calc_accuracy(self, result):
+        """ Calculates winning accuracy / win rate based on winning evaluation_tactic """
         win_rate = 0
-        for x, riadok in enumerate(self.tactic):
+        for x, riadok in enumerate(self.evaluation_tactic):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
-        win_rate = win_rate * 1 / len(self.tactic)
+        win_rate = win_rate * 1 / len(self.evaluation_tactic)
         return win_rate
 
     def fitness(self, x):
-        # Returns fitness of a given individual.
-        # To be implemented in subclasses
+        """ Returns fitness of a given individual."""
         result = []
         for g in range(4):
             # Alice and Bob share an entangled state
             # The input to alice and bob is random
             # Alice chooses her operation based on her input
-            self.state = self.initial.copy()  ########## INITIAL STATE
+            self.state = self.initial.copy()
             self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
                                        dtype=np.longdouble)
 
@@ -108,8 +103,8 @@ class GenAlgProblem:
         return fitness_individual
 
     def crossover(self, x, y, k):
-        # Take two parents (x and y) and make two children by applying k-point
-        # crossover. Positions for crossover are chosen randomly.
+        """ Take two parents (x and y) and make two children by applying k-point
+         crossover. Positions for crossover are chosen randomly."""
         oddelovace = [0, len(x)]
 
         for i in range(k):
@@ -129,7 +124,7 @@ class GenAlgProblem:
         return (x_new, y_new)
 
     def boolean_mutation(self, x, prob):
-        # Elements of x are 0 or 1. Mutate (i.e. change) each element of x with given probability.
+        """ Elements of x are 0 or 1. Mutate (i.e. change) each element of x with given probability. """
         potomok = x
         for poc in range(len(potomok)):
             if random.random() <= prob:
@@ -140,8 +135,8 @@ class GenAlgProblem:
         return potomok
 
     def number_mutation(self, x, prob):
-        # Elements of x are real numbers [0.0 .. 1.0]. Mutate (i.e. add/substract random number)
-        # each number in x with given probabipity.
+        """ Elements of x are real numbers [0.0 .. 1.0]. Mutate (i.e. add/substract random number)
+         each number in x with given probabipity."""
         potomok = x
         for poc in range(len(potomok)):
 
@@ -172,9 +167,9 @@ class GenAlgProblem:
         return mutacia
 
     def solve(self, max_generations, goal_fitness=1):
-        # Implementation of genetic algorithm. Produce generations until some
+        """Implementation of genetic algorithm. Produce generations until some
         # individual`s fitness reaches goal_fitness, or you exceed total number
-        # of max_generations generations. Return best found individual.
+        # of max_generations generations. Return best found individual. """
         while max_generations != 0:
             # print(max_generations)
             max_generations -= 1
@@ -239,12 +234,12 @@ class GenAlgProblem:
 if __name__ == "__main__":
     # Solve to find optimal individual
     history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
-    tactic = [[1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [1, 0, 0, 1],
-              [0, 1, 1, 0]]
+    evaluation_tactic = [[1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [1, 0, 0, 1],
+                         [0, 1, 1, 0]]
     ga = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
-                       tactic=tactic)
+                       evaluation_tactic=evaluation_tactic)
     best = ga.solve(50)  # you can also play with max. generations
     ga.show_individual(best[0])
 
