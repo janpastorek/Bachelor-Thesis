@@ -1,6 +1,6 @@
 import unittest
 from CHSHv02quantumDiscreteStatesActions import Environment
-from CHSHv05quantumGeneticOptimalization import GenAlgProblem
+from CHSHv05quantumGeneticOptimalization import CHSHgeneticOptimizer
 import numpy as np
 from qiskit.extensions import RYGate
 from math import pi
@@ -126,8 +126,8 @@ class TestCHSH(unittest.TestCase):
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [0, 1, 1, 0]]
-        ga = GenAlgProblem(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
-                           evaluation_tactic=tactic)
+        ga = CHSHgeneticOptimizer(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
+                                  evaluation_tactic=tactic)
         best = ga.solve(50)  # you can also play with max. generations
         assert best[1] >= 0.83
 

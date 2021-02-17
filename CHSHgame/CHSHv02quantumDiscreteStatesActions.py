@@ -10,7 +10,6 @@ from CHSH import Game, get_scaler, Agent
 class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
     def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2):
-        super().__init__(evaluation_tactic)
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
@@ -20,8 +19,8 @@ class Environment(CHSH.abstractEnvironment):
                                       dtype=np.float64)
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
         # input, generate "questions" in equal number
         self.a = []
@@ -36,12 +35,7 @@ class Environment(CHSH.abstractEnvironment):
     @CHSH.override
     def reset(self):
         self.velocity = 1
-        self.counter = 1
-        self.history_actions = []
-        self.state = self.initial_state.copy()
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
-        return self.repr_state
+        return super().reset()
 
     def calculate_state(self, history_actions):
         """ Calculates the state according to previous actions"""
@@ -59,8 +53,10 @@ class Environment(CHSH.abstractEnvironment):
 
                 if action == "biggerAngle":
                     self.velocity *= 2
+                    continue
                 elif action == "smallerAngle":
                     self.velocity /= 2
+                    continue
 
                 gate = self.get_gate(action)
                 if gate == IGate:
@@ -109,11 +105,11 @@ class Environment(CHSH.abstractEnvironment):
         rozdiel_acc = self.accuracy - before
         reward = rozdiel_acc * 100
 
-        # skonci, ak uz ma maximalny pocet bran
+        # ends when it has applied max number of gates / xxr0
         if self.accuracy >= self.max_acc:
             done = True
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.count_gates() + 1))  # alebo za count_gates len(history_actuons)
+            reward += 5 * (1 / (self.count_gates() + 1))
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
@@ -157,12 +153,12 @@ if __name__ == '__main__':
                          [0, 1, 1, 0]]
     max_gates = 10
     round_to = 2
-    env = Environment(n_questions, evaluation_tactic, max_gates)  ## FIX ME SCALABILITY, TO PARAM
+    env = Environment(n_questions, evaluation_tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
-                  eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=round_to)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                  eps_decay=0.9995, alpha=0.1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
@@ -198,9 +194,9 @@ if __name__ == '__main__':
     plt.plot(portfolio_value)
     plt.show()
     # save portfolio value for each episode
-    np.save(f'train.npy', portfolio_value)
+    np.save(f'.training/train.npy', portfolio_value)
 
     portfolio_value = game.evaluate_test(agent, env)
     print(portfolio_value)
-    a = np.load(f'train.npy')
+    a = np.load(f'.training/train.npy')
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")

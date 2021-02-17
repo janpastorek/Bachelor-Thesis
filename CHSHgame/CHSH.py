@@ -2,14 +2,14 @@ from qiskit.extensions import RYGate, RZGate, RXGate, IGate
 from sklearn.preprocessing import StandardScaler
 
 
-def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=2):
+def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=2):
     """:returns scikit-learn scaler object to scale the states"""
     # Note: you could also populate the replay buffer here
     states = []
     for _ in range(N):
         action = np.random.choice(ALL_POSSIBLE_ACTIONS)
         state, reward, done = env.step(action)
-        states.append(np.round(state, roundTo))
+        states.append(np.round(state, round_to))
 
         if done:
             break
@@ -23,22 +23,26 @@ def override(f):
     return f
 
 
-import abc
+from abc import ABC, abstractmethod
 
 
-class abstractEnvironment:
+class abstractEnvironment(ABC):
     """ abstract environment to create CHSH framework """
 
-    def __init__(self, evaluation_tactic):
-        self.evaluation_tactic = evaluation_tactic
-
-    @abc.abstractmethod
+    @abstractmethod
     def reset(self):
         """Return initial_time_step."""
+        self.counter = 1
+        self.history_actions = []
+        self.state = self.initial_state.copy()
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        return self.repr_state
 
-    @abc.abstractmethod
+    @abstractmethod
     def step(self, action):
         """Apply action and return new time_step."""
+        pass
 
     def measure_analytic(self):
         """ :returns probabilities of 00,01,10,11 happening in matrix """
@@ -191,10 +195,10 @@ class Game:
         # save the weights when we are done
         if DO == 'train':
             # # save the DQN
-            agent.save(f'linear.npz')
+            agent.save(f'.training/linear.npz')
 
             # save the scaler
-            with open(f'scaler.pkl', 'wb') as f:
+            with open(f'.training/scaler.pkl', 'wb') as f:
                 pickle.dump(self.scaler, f)
 
         return portfolio_value, rewards
@@ -208,7 +212,7 @@ class Game:
             N = 1
 
             # then load the previous scaler
-            with open(f'scaler.pkl', 'rb') as f:
+            with open(f'.training/scaler.pkl', 'rb') as f:
                 self.scaler = pickle.load(f)
 
             # make sure epsilon is not 1!
@@ -216,7 +220,7 @@ class Game:
             agent.epsilon = 0
 
             # load trained weights
-            agent.load(f'linear.npz')
+            agent.load(f'.training/linear.npz')
 
         # play the game num_episodes times
 
@@ -288,7 +292,7 @@ def play_quantum(evaluation_tactic):
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
                   eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=round_to)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
