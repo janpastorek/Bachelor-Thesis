@@ -55,4 +55,6 @@ class Environment(CHSH.abstractEnvironment):
                     result.append(self.evaluate(question, (a, b)))
                 accuracies.append(self.calc_accuracy(result))
                 result = []
+
+        print(accuracies)
         return max(accuracies)

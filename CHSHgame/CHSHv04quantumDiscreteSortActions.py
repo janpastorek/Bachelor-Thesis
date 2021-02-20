@@ -138,7 +138,7 @@ if __name__ == '__main__':
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
                   eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=roundTo)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=roundTo)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
@@ -163,13 +163,13 @@ if __name__ == '__main__':
     plt.show()
 
     # save portfolio value for each episode
-    np.save(f'train.npy', portfolio_value)
+    np.save(f'.training/train.npy', portfolio_value)
 
     # evaluation
     portfolio_value = game.evaluate_test(agent, n_questions, tactic, max_gates)
     print(portfolio_value)
 
-    a = np.load(f'train.npy')
+    a = np.load(f'.training/train.npy')
 
     print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
 

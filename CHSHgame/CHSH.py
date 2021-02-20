@@ -1,15 +1,16 @@
+import matplotlib.pyplot as plt
 from qiskit.extensions import RYGate, RZGate, RXGate, IGate
 from sklearn.preprocessing import StandardScaler
 
 
-def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=2):
+def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=2):
     """:returns scikit-learn scaler object to scale the states"""
     # Note: you could also populate the replay buffer here
     states = []
     for _ in range(N):
         action = np.random.choice(ALL_POSSIBLE_ACTIONS)
         state, reward, done = env.step(action)
-        states.append(np.round(state, roundTo))
+        states.append(np.round(state, round_to))
 
         if done:
             break
@@ -19,26 +20,46 @@ def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=2):
     return scaler
 
 
+def show_plot_of(plot_this, label, place_line_at=()):
+    # plot relevant information
+    fig_dims = (10, 6)
+
+    fig, ax = plt.subplots(figsize=fig_dims)
+
+    for pl in place_line_at:
+        plt.axhline(y=pl, color='r', linestyle='-')
+
+    plt.xlabel('Epochs')
+    plt.ylabel(label)
+
+    plt.plot(plot_this)
+    plt.show()
+
+
 def override(f):
     return f
 
 
-import abc
+from abc import ABC, abstractmethod
 
 
-class abstractEnvironment:
+class abstractEnvironment(ABC):
     """ abstract environment to create CHSH framework """
 
-    def __init__(self, evaluation_tactic):
-        self.evaluation_tactic = evaluation_tactic
-
-    @abc.abstractmethod
+    @abstractmethod
     def reset(self):
         """Return initial_time_step."""
+        self.counter = 1
+        self.history_actions = []
+        self.state = self.initial_state.copy()
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        return self.repr_state
 
-    @abc.abstractmethod
+    @abstractmethod
     def step(self, action):
         """Apply action and return new time_step."""
+        pass
 
     def measure_analytic(self):
         """ :returns probabilities of 00,01,10,11 happening in matrix """
@@ -58,8 +79,13 @@ class abstractEnvironment:
         """ :returns count of relevant gates """
         count = 0
         for action in self.history_actions:
-            if action != "xxr0":
+            if action in {"xxr0"}:
+                pass
+            elif action in {"smallerAngle", "biggerAngle"}:
+                count += 0.5
+            else:
                 count += 1
+
         return count
 
     def get_gate(self, action):
@@ -76,13 +102,13 @@ class abstractEnvironment:
 
 
 import random
-from LinearModel import LinearModel
 
 
 class Agent:
     """ Reinforcement learning agent """
 
-    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum, ALL_POSSIBLE_ACTIONS):
+    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum, ALL_POSSIBLE_ACTIONS,
+                 model_type):
         self.state_size = state_size
         self.action_size = action_size
         self.gamma = gamma  # discount rate
@@ -91,7 +117,7 @@ class Agent:
         self.epsilon_decay = eps_decay
         self.alpha = alpha
         self.momentum = momentum
-        self.model = LinearModel(state_size, action_size)
+        self.model = model_type(state_size, action_size)
         self.ALL_POSSIBLE_ACTIONS = ALL_POSSIBLE_ACTIONS
 
     def act(self, state):
@@ -139,7 +165,7 @@ import numpy as np
 class Game:
     """ creates CHSH game framework for easier manipulation """
 
-    def __init__(self, scaler, round_to=2):
+    def __init__(self, scaler=None, round_to=2):
         self.scaler = scaler
         self.round_to = round_to
 
@@ -149,7 +175,10 @@ class Game:
         # in this version we will NOT use "exploring starts" method
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
-        state = self.scaler.transform([state])
+        if self.scaler != None:
+            state = self.scaler.transform([state])
+        else:
+            state = np.array([state], dtype=np.float64)
         done = False
 
         # be aware of the timing
@@ -160,7 +189,10 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            next_state = self.scaler.transform([np.round(next_state, self.round_to)])
+            if self.scaler != None:
+                next_state = self.scaler.transform([np.round(next_state, self.round_to)])
+            else:
+                next_state = np.array([np.round(next_state, self.round_to)], dtype=np.float64)
             if DO == 'train':
                 agent.train(np.round(state, self.round_to), action[1], reward, next_state, done)
             state = next_state.copy()
@@ -191,10 +223,10 @@ class Game:
         # save the weights when we are done
         if DO == 'train':
             # # save the DQN
-            agent.save(f'linear.npz')
+            agent.save(f'.training/linear.npz')
 
             # save the scaler
-            with open(f'scaler.pkl', 'wb') as f:
+            with open(f'.training/scaler.pkl', 'wb') as f:
                 pickle.dump(self.scaler, f)
 
         return portfolio_value, rewards
@@ -208,15 +240,16 @@ class Game:
             N = 1
 
             # then load the previous scaler
-            with open(f'scaler.pkl', 'rb') as f:
-                self.scaler = pickle.load(f)
+            if self.scaler != None:
+                with open(f'.training/scaler.pkl', 'rb') as f:
+                    self.scaler = pickle.load(f)
 
             # make sure epsilon is not 1!
             # no need to run multiple episodes if epsilon = 0, it's deterministic
             agent.epsilon = 0
 
             # load trained weights
-            agent.load(f'linear.npz')
+            agent.load(f'.training/linear.npz')
 
         # play the game num_episodes times
 
@@ -239,18 +272,18 @@ def generate_only_interesting_tactics(size=4):
     product = list(itertools.product([0, 1], repeat=size))
     tactics = list(itertools.product(product, repeat=size))
     print(len(tactics))
-    interesting_evaluation_tactics = dict()
+    interesting_evaluation = dict()
     for tactic in tactics:
         try:
-            if interesting_evaluation_tactics[(tactic[1], tactic[0], tactic[3], tactic[2])]: pass
+            if interesting_evaluation[(tactic[1], tactic[0], tactic[3], tactic[2])]: pass
         except KeyError:
             try:
-                if interesting_evaluation_tactics[(tactic[3], tactic[2], tactic[1], tactic[0])]: pass
+                if interesting_evaluation[(tactic[3], tactic[2], tactic[1], tactic[0])]: pass
             except KeyError:
-                interesting_evaluation_tactics[tactic] = True
+                interesting_evaluation[tactic] = True
 
-    print(len(interesting_evaluation_tactics.keys()))
-    return interesting_evaluation_tactics.keys()
+    print(len(interesting_evaluation.keys()))
+    return interesting_evaluation.keys()
 
 
 import CHSHdeterministic
@@ -279,23 +312,23 @@ def play_quantum(evaluation_tactic):
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
 
-    N = 6000
+    N = 2000
     n_questions = 4
-    max_gates = 10
+    max_gates = 9
     round_to = 2
     env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions, evaluation_tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
-                  eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, roundTo=round_to)
+    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                  eps_decay=0.9995, alpha=0.1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
 
     # store the final value of the portfolio (end of episode)
-    game = Game(scaler, round_to=round_to)
+    game = Game(scaler=scaler, round_to=round_to)
     game.evaluate_train(N, agent, env)
-    accuracy, reward = game.evaluate_test(agent, env)
-    return accuracy
+    potfolio_val = game.evaluate_test(agent, env)
+    return potfolio_val[0][0]  # acc
 
 
 def max_entangled_difference(n):
@@ -303,7 +336,8 @@ def max_entangled_difference(n):
     cutTactics = generate_only_interesting_tactics(n)
 
     differences = []
-    for tactic in cutTactics:
+    for _ in range(10):
+        tactic = random.choice(cutTactics)
         classical_max = play_deterministic(tactic)
         quantum_max = play_quantum(tactic)
         difference_win_rate = quantum_max - classical_max
@@ -317,8 +351,12 @@ def max_entangled_difference(n):
 
 if __name__ == '__main__':
     # max_entangled_difference(size=4)
-    evaluation_tactic = [[1, 0, 0, 1],
-                         [1, 0, 0, 1],
-                         [1, 0, 0, 1],
-                         [0, 1, 1, 0]]
-    print(play_deterministic(evaluation_tactic))
+    # evaluation_tactic = [[1, 0, 0, 1],
+    #                      [1, 0, 0, 1],
+    #                      [1, 0, 0, 1],
+    #                      [0, 1, 1, 0]]
+    # print(play_deterministic(evaluation_tactic))
+
+    # print(len(generate_only_interesting_tactics(4)))
+
+    max_entangled_difference(4)

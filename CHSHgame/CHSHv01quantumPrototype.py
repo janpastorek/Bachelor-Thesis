@@ -139,7 +139,7 @@ for mat in result[:-1]:
     win_rate += 1 / 4 * (mat[0] + mat[3])
 
 win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
-
+print(win_rate)
 evaluation_tactic = [[1, 0, 0, 1],
           [1, 0, 0, 1],
           [1, 0, 0, 1],

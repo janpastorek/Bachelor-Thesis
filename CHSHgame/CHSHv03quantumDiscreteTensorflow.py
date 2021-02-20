@@ -36,7 +36,7 @@ class Environment(py_environment.PyEnvironment):
                                        -(np.array([1], dtype=np.float64) / sqrt(2)).item(), 0], dtype=np.float64)
         self.state = self.initial_state.copy()
         self.num_players = 2
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
 
         self._action_spec = array_spec.BoundedArraySpec(shape=(), dtype=np.int32, minimum=0,
                                                         maximum=len(ALL_POSSIBLE_ACTIONS) - 1, name='action')
@@ -48,7 +48,7 @@ class Environment(py_environment.PyEnvironment):
         self.max_gates = max_gates
         self.tactic = tactic
 
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(n_questions)])
         self.max_acc = self.accuracy
         self.rew_hist = [0]
 
@@ -63,9 +63,9 @@ class Environment(py_environment.PyEnvironment):
     def _reset(self):
         self.counter = 1
         self.history_actions = []
-        self.state = self.initial_state.copy()  ########## INITIAL STATE
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for i in range(n_questions)])
-        self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.state = self.initial_state.copy()
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(n_questions)])
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         return ts.restart(self.repr_state)
 
     def action_spec(self):
@@ -100,19 +100,19 @@ class Environment(py_environment.PyEnvironment):
             for action in history_actions:
                 gate = np.array([action[3:]], dtype=np.float64)
 
-                if self.a[g] == 0 and action[0:2] == 'a0':  ## FIX ME SCALABILITY, TO PARAM
+                if self.a[g] == 0 and action[0:2] == 'a0':
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
                                            self.state)
 
-                if self.a[g] == 1 and action[0:2] == 'a1':  ## FIX ME SCALABILITY, TO PARAM
+                if self.a[g] == 1 and action[0:2] == 'a1':
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),
                                            self.state)
 
-                if self.b[g] == 0 and action[0:2] == 'b0':  ## FIX ME SCALABILITY, TO PARAM
+                if self.b[g] == 0 and action[0:2] == 'b0':
                     self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
                                            self.state)
 
-                if self.b[g] == 1 and action[0:2] == 'b1':  ## FIX ME SCALABILITY, TO PARAM
+                if self.b[g] == 1 and action[0:2] == 'b1':
                     self.state = np.matmul(np.kron(np.identity(2), RYGate((gate * pi / 180).item()).to_matrix()),
                                            self.state)
 

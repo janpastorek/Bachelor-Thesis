@@ -1,7 +1,11 @@
 import numpy as np
-class LinearModel:
-    """ A linear regression model """
+from CHSH import override
+from RegressionModel import RegressionModel
 
+class LinearModel(RegressionModel):
+    """ Simple linear approxiamation model """
+
+    @override
     def __init__(self, input_dim, n_action):
         self.W = np.random.randn(input_dim, n_action) / np.sqrt(input_dim)
         self.b = np.zeros(n_action)
@@ -12,11 +16,13 @@ class LinearModel:
 
         self.losses = []
 
+    @override
     def predict(self, X):
         # make sure X is N x D
         assert (len(X.shape) == 2)
         return X.dot(self.W) + self.b
 
+    @override
     def sgd(self, X, Y, learning_rate=0.01, momentum=0.9):
         # make sure X is N x D
         assert (len(X.shape) == 2)
@@ -47,13 +53,16 @@ class LinearModel:
         mse = np.mean((Yhat - Y) ** 2)
         self.losses.append(mse)
 
+    @override
     def load_weights(self, filepath):
         npz = np.load(filepath)
         self.W = npz['W']
         self.b = npz['b']
 
+    @override
     def save_weights(self, filepath):
         np.savez(filepath, W=self.W, b=self.b)
 
+    @override
     def get_losses(self):
         return self.losses
