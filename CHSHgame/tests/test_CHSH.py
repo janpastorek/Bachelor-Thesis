@@ -132,33 +132,34 @@ class TestCHSH(unittest.TestCase):
         assert best[1] >= 0.83
 
     def testTensorflow(self):
-        import numpy as np
-
-        from tensorflow.keras import layers, models
-
-        IMAGE_WIDTH = 128
-        IMAGE_HEIGHT = 128
-
-        model = models.Sequential()
-        model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)))
-        model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-        model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-        model.add(layers.Flatten())
-        model.add(layers.Dense(32, activation='relu'))
-        model.add(layers.Dense(4, activation='softmax'))
-
-        model.compile(optimizer='adam',
-                      loss='categorical_crossentropy',
-                      metrics=['accuracy'])
-
-        BATCH_SIZE = 32
-
-        images = np.zeros((BATCH_SIZE, IMAGE_WIDTH, IMAGE_HEIGHT, 3))
-        labels = np.zeros((BATCH_SIZE, 4))
-
-        history = model.fit(images, labels, epochs=1)
+        pass
+        # import numpy as np
+        #
+        # from tensorflow.keras import layers, models
+        #
+        # IMAGE_WIDTH = 128
+        # IMAGE_HEIGHT = 128
+        #
+        # model = models.Sequential()
+        # # model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)))
+        # # model.add(layers.MaxPooling2D((2, 2)))
+        # # model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+        # # model.add(layers.MaxPooling2D((2, 2)))
+        # # model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+        # # model.add(layers.Flatten())
+        # model.add(layers.Dense(4, activation='relu'))
+        # model.add(layers.Dense(32, activation='softmax'))
+        #
+        # model.compile(optimizer='adam',
+        #               loss='categorical_crossentropy',
+        #               metrics=['accuracy'])
+        #
+        # BATCH_SIZE = 128
+        #
+        # images = np.zeros((BATCH_SIZE, IMAGE_WIDTH))
+        # labels = np.zeros((BATCH_SIZE, 32))
+        #
+        # history = model.fit(images, labels, epochs=1)
 
     def testTensorflow1(self):
         import tensorflow as tf
@@ -171,6 +172,25 @@ class TestCHSH(unittest.TestCase):
                              [1, 0, 0, 1],
                              [0, 1, 1, 0]]
         assert CHSH.play_deterministic(evaluation_tactic) == 0.75
+
+    def testCHSHacc(self):
+        import CHSHv02quantumDiscreteStatesActions
+        naucil_sa = ['b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'biggerAngle', 'a0ry22.5', 'b1ry-22.5']
+        dokopy = ['bory-135', 'a0ry45', 'b1ry-45']
+
+        tactic = [[1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [0, 1, 1, 0]]
+        env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions=4,evaluation_tactic=tactic,max_gates=10)
+        for a in dokopy:
+            env.step(a)
+
+        print(env.accuracy)
+        assert env.accuracy < 0.86
+
+
+
 
 if __name__ == "__main__":
     unittest.main()

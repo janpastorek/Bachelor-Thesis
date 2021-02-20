@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 
 class GeneticAlg(ABC):
-    """ Creates abstract genetic algorithm framwork """
+    """ Abstract genetic algorithm framwork """
 
     @abstractmethod
     def generate_individual(self):
