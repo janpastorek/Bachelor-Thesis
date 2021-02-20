@@ -53,6 +53,20 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
  <li>Conclusion</li>
 </ol>
 
+### Diary
+
+<details>
+<summary>Heading</summary>
+<ul>
+<li> markdown list 1</li>
+<ul>
+<li> nested list 1</li>
+<li> nested list 2</li>
+</ul>
+<li> markdown list 2</li>
+</ul>
+</details>
+
 ### Deadlines, Milestones
 #### * webová stránka (do 11:30 29.10.2020) -> Done on time
 
@@ -87,7 +101,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 
 #### * finálne testovanie a odovzdanie práce (do 15.5.2021)
 
-### Zdroje
+### Sources
 <a href="https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/view?utm_content=DAEPEqLIsWM&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton">Presentation of sources</a>
 
 1. Two-player entangled games are NP-hard, Anand Natarajan, Thomas Vidick, Proceedings of CCC'18, arXiv:1710.03062
