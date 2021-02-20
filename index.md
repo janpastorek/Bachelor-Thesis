@@ -56,7 +56,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 ### Diary
 
 <details>
-<summary><h3>Diary</h3></summary>
+<summary>Click and see!</summary>
 <ul>
 <li> 16.2 - 23.2 </li>
 <ul>
