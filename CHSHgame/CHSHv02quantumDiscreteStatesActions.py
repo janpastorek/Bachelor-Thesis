@@ -27,7 +27,7 @@ class Environment(CHSH.abstractEnvironment):
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
-        for x in range(2):
+        for x in range(2): # TODO: Number of questions can be derived from evaluation tactic, this can be abstracted
             for y in range(2):
                 self.a.append(x)
                 self.b.append(y)
