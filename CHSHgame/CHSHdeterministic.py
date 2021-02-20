@@ -46,6 +46,7 @@ class Environment(CHSH.abstractEnvironment):
 
     def play_all_strategies(self):
         """ plays 16 different strategies,evaluate each and :returns: the best accuracy from all strategies """
+        # TODO: Now it plays only 4 ? I miss some loop
         accuracies = []
         result = []
         for a in range(len(self.possible_answers)):

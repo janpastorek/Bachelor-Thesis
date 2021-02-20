@@ -6,8 +6,10 @@ from keras.models import Sequential
 from keras.models import model_from_json
 from keras.optimizers import Adam
 
-from CHSH import override
 from RegressionModel import RegressionModel
+
+
+def override(f): return f
 
 
 def show_history(history, block=True):
@@ -57,7 +59,8 @@ class KerasModel(RegressionModel):
         # output layer
         self.dnn.add(layers.Dense(n_action))
 
-        self.compiled = False;
+        self.compiled = False
+        self.losses = None
 
     @override
     def predict(self, X):

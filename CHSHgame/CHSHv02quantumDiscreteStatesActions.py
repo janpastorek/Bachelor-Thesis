@@ -11,13 +11,14 @@ from KerasModel import KerasModel
 class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
-    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2):
+    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2,
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
         self.evaluation_tactic = evaluation_tactic
-        self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
+        self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
@@ -26,7 +27,7 @@ class Environment(CHSH.abstractEnvironment):
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
-        for x in range(2):
+        for x in range(2): # TODO: Number of questions can be derived from evaluation tactic, this can be abstracted
             for y in range(2):
                 self.a.append(x)
                 self.b.append(y)
