@@ -1,6 +1,10 @@
 import numpy as np
-from CHSH import override
+
 from RegressionModel import RegressionModel
+
+
+def override(f): return f
+
 
 class LinearModel(RegressionModel):
     """ Simple linear approxiamation model """

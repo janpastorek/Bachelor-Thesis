@@ -3,20 +3,21 @@ from math import sqrt
 import numpy as np
 
 import CHSH
-from CHSH import get_scaler, Agent, Game
+from CHSH import Agent, Game
 from CHSHv05quantumGeneticOptimalization import CHSHgeneticOptimizer
 
 
 class Environment(CHSH.abstractEnvironment):
 
-    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2):
+    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2,
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
+                                        dtype=np.longdouble)):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
         self.evaluation_tactic = evaluation_tactic
-        self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
-                                      dtype=np.longdouble)
+        self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
         self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
@@ -25,8 +26,8 @@ class Environment(CHSH.abstractEnvironment):
         self.min_gates = max_gates
 
         self.optimizer = CHSHgeneticOptimizer(population_size=15, n_crossover=len(self.history_actions) - 1,
-                                              mutation_prob=0.10, state=self.initial_state,
-                                              history_actions=self.history_actions,
+                                              mutation_prob=0.10, state=self.initial_state.copy(),
+                                              history_actions=self.history_actions.copy(),
                                               evaluation_tactic=self.evaluation_tactic,
                                               num_players=self.num_players)
         self.visited = dict()
@@ -40,9 +41,9 @@ class Environment(CHSH.abstractEnvironment):
         try:
             actions, accuracy, self.repr_state = self.visited[tuple(self.history_actions)]
         except KeyError:
-            self.optimizer.reset(self.history_actions, len(self.history_actions) - 1)
+            self.optimizer.reset(self.history_actions.copy(), len(self.history_actions) - 1)
             actions, accuracy, self.repr_state = self.optimizer.solve(22)
-            self.visited[tuple(self.history_actions)] = actions, accuracy, self.repr_state
+            self.visited[tuple(self.history_actions.copy())] = actions, accuracy, self.repr_state
         return accuracy
 
     @CHSH.override
@@ -105,7 +106,6 @@ class Environment(CHSH.abstractEnvironment):
 import warnings
 
 warnings.filterwarnings('ignore')
-import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     ACTIONS = ['r0']  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y

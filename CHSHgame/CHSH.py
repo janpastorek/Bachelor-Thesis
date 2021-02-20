@@ -1,6 +1,10 @@
+from math import sqrt
+
 import matplotlib.pyplot as plt
 from qiskit.extensions import RYGate, RZGate, RXGate, IGate
 from sklearn.preprocessing import StandardScaler
+
+from LinearModel import LinearModel
 
 
 def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=2):
@@ -36,8 +40,7 @@ def show_plot_of(plot_this, label, place_line_at=()):
     plt.show()
 
 
-def override(f):
-    return f
+def override(f): return f
 
 
 from abc import ABC, abstractmethod
@@ -283,7 +286,7 @@ def generate_only_interesting_tactics(size=4):
                 interesting_evaluation[tactic] = True
 
     print(len(interesting_evaluation.keys()))
-    return interesting_evaluation.keys()
+    return list(interesting_evaluation.keys())
 
 
 import CHSHdeterministic
@@ -312,23 +315,48 @@ def play_quantum(evaluation_tactic):
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
 
-    N = 2000
+    N = 3000
     n_questions = 4
     max_gates = 9
     round_to = 2
-    env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions, evaluation_tactic, max_gates)
 
-    # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                  eps_decay=0.9995, alpha=0.1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
-    scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
-    batch_size = 128
+    learning_rates = [0.1, 1, 0.01]
+    gammas = [1, 0.9, 0.1]
+    states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64),
+              np.array([1, 0, 0, 0], dtype=np.float64),
+              np.array([0, 1 / sqrt(2), 1 / sqrt(2), 0], dtype=np.float64),
+              np.array([0, 0, 1, 0], dtype=np.float64)]
 
-    # store the final value of the portfolio (end of episode)
-    game = Game(scaler=scaler, round_to=round_to)
-    game.evaluate_train(N, agent, env)
-    potfolio_val = game.evaluate_test(agent, env)
-    return potfolio_val[0][0]  # acc
+    best = 0
+
+    for state in states:
+        env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions, evaluation_tactic, max_gates,
+                                                              initial_state=state)
+        for alpha in learning_rates:
+            for gamma in gammas:
+                env.reset()
+                # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
+                agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
+                              eps_min=0.01,
+                              eps_decay=0.9995, alpha=alpha, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+                              model_type=LinearModel)
+                # scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
+                batch_size = 128
+
+                # store the final value of the portfolio (end of episode)
+                game = Game(round_to=round_to)
+                portfolio_val = game.evaluate_train(N, agent, env)
+
+                # save portfolio value for each episode
+                np.save(f'.training/train.npy', portfolio_val)
+                # TODO: what if it would be better to use just maximal that it could find in training portfolio?
+                # portfolio_val = game.evaluate_test(agent, env)
+                # return portfolio_val[0][0]  # acc
+
+                load_acc = np.load(f'.training/train.npy')[0].max()
+                if load_acc > best:
+                    best = load_acc
+    return best
 
 
 def max_entangled_difference(n):
@@ -340,12 +368,13 @@ def max_entangled_difference(n):
         tactic = random.choice(cutTactics)
         classical_max = play_deterministic(tactic)
         quantum_max = play_quantum(tactic)
-        difference_win_rate = quantum_max - classical_max
+        difference_win_rate = np.round(quantum_max, 3) - np.round(classical_max, 3)
         differences.append((tactic, difference_win_rate))
 
     differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for tactic, difference_win_rate in differences:
-        print("evaluation_tactic = ", tactic)
+        print("evaluation_tactic = ")
+        for i in tactic: print(i)
         print("difference = ", difference_win_rate)
 
 
