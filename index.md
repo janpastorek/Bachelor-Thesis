@@ -56,14 +56,16 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 ### Diary
 
 <details>
-<summary>Heading</summary>
+<summary><h3>Diary</h3></summary>
 <ul>
-<li> markdown list 1</li>
+<li> 16.2 - 23.2 </li>
 <ul>
-<li> nested list 1</li>
-<li> nested list 2</li>
+<li> Implementoval som GPU tensorflow model do trénovania môjho Reinforcement Agenta.</li>
+<li> Pracoval som na funkcii, ktorá porovnáva najlepšiu klasickú a najlepšiu kvantovú taktiku. A vyberie také hry, ktoré majú najväčšie rozdiely.</li>
+<li> Pridal som nové actions, ktoré vie vykonávať agent. (spomaľ, zrýchli) </li>
+<li> Refactoring a väčšia abstrakcia hrier, genetických algoritmov etc. </li>
 </ul>
-<li> markdown list 2</li>
+<li> 23.2 - 2.3 </li>
 </ul>
 </details>
 
