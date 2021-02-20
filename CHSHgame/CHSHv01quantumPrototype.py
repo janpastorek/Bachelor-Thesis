@@ -139,21 +139,21 @@ for mat in result[:-1]:
     win_rate += 1 / 4 * (mat[0] + mat[3])
 
 win_rate += 1 / 4 * (result[-1][1] + result[-1][2])
-
-tactic = [[1, 0, 0, 1],
+print(win_rate)
+evaluation_tactic = [[1, 0, 0, 1],
           [1, 0, 0, 1],
           [1, 0, 0, 1],
           [0, 1, 1, 0]]
 win_rate1 = 0
-for x, riadok in enumerate(tactic):
+for x, riadok in enumerate(evaluation_tactic):
     for y, stlpec in enumerate(riadok):
         win_rate1 += (stlpec * result[x][y])
 win_rate1 = win_rate1 * 1 / 4
 
-# test tactic DONE
+# test evaluation_tactic DONE
 print(win_rate1)
 
-# assert (win_rate==win_rate1) # test tactic DONE
+# assert (win_rate==win_rate1) # test evaluation_tactic DONE
 
 #     # Convert the 4 state measurement result to two 1-bit results
 #     if result == 0:
