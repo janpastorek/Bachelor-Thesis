@@ -53,7 +53,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
  <li>Conclusion</li>
 </ol>
 
-### Diary
+### Diary (in Slovak)
 
 <details>
 <summary>Click and see!</summary>
@@ -70,38 +70,19 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 </details>
 
 ### Deadlines, Milestones
-#### * webová stránka (do 11:30 29.10.2020) -> Done on time
+#### * web page (do 11:30 29.10.2020) -> Done on time
 
-  -> pošlete adresu stránky na baksem@lists.dai.fmph.uniba.sk
-  názov, školiteľ, cieľ a anotácia, podľa možnosti: návrh štruktúry textu práce na hlavné kapitoly
+#### * set milestones and deadlines (do 11:30 10.11.2020)  -> Done on time
 
-#### * pripravíte si časový plán svojej práce (do 11:30 10.11.2020)  -> Done on time
+#### * collecting sources(do 11:30 01.12.2020) -> Done on time
 
-  -> aké budú hlavné etapy vašej práce (milestones), do kedy ich budete mať hotové. tento plán skonzultujte so svojím školiteľom!
-
-#### * zbieranie zdrojov (do 11:30 01.12.2020) -> Done on time
-
-  -> na baksem@lists... poslať emailom upozornenie, že je to na webovej stránke
-  -> pripraviť si prezentáciu zdrojov a byť pripravený ju odprezentovať
-  na webovú stránku umiestniť zoznam zdrojov
-  podobné staršie bakalárske práce
-  východiskové odborné práce
-  existujúce riešenia (napr. softvér, systémy, webové portály, ...)
-  manuály, učebnice, tutorialy, iné dokumenty
-  vstupné údaje
-  pozri tiež: otázky a odpovede
-
-#### * východiská a prototyp (do 15.1.2021) -> Done on time
-
-  -> vyučujúcemu poslať emailom upozornenie, že je to na webovej stránke
-  východisková kapitola bakalárskej práce - rozsah aspoň 10 strán
-  a fungujúci program aj so zdrojovým kódom - demo, screenshoty alebo video
+#### * 10 pages and prototype (do 15.1.2021) -> Done on time
   
-#### * finálny program (do 15.3.2021)
+#### * final program (do 15.3.2021)
 
-#### * dokončovanie hlavnej časti bakalárskej práce (do 15.4.2021)
+#### * completing main part of bachelor thesis (do 15.4.2021)
 
-#### * finálne testovanie a odovzdanie práce (do 15.5.2021)
+#### * final testing and submitting (do 15.5.2021)
 
 ### Sources
 <a href="https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/view?utm_content=DAEPEqLIsWM&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton">Presentation of sources</a>
