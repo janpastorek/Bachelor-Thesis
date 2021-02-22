@@ -53,8 +53,8 @@ class KerasModel(RegressionModel):
         # Build the model
         self.dnn = Sequential()
 
-        self.dnn.add(layers.Dense(8, activation='relu', input_shape=[input_dim]))
-        self.dnn.add(layers.Dense(16, activation='relu'))
+        self.dnn.add(layers.Dense(input_dim, activation='relu', input_shape=[input_dim]))
+        self.dnn.add(layers.Dense(32, activation='relu'))
 
         # output layer
         self.dnn.add(layers.Dense(n_action))

@@ -359,22 +359,36 @@ def play_quantum(evaluation_tactic):
     return best
 
 
+def categorize(cutTactics):
+    categories = dict()
+    for tactic in cutTactics:
+        classical_max = play_deterministic(tactic)
+        if classical_max not in (0, 1):  # these are not interesting
+            try:
+                categories[classical_max].append(tactic)
+            except KeyError:
+                categories[classical_max] = [tactic]
+    return categories
+
+
 def max_entangled_difference(n):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
-    cutTactics = generate_only_interesting_tactics(n)
+    categories = categorize(generate_only_interesting_tactics(n))
 
     differences = []
-    for _ in range(10):
-        tactic = random.choice(cutTactics)
-        classical_max = play_deterministic(tactic)
-        quantum_max = play_quantum(tactic)
-        difference_win_rate = np.round(quantum_max, 3) - np.round(classical_max, 3)
-        differences.append((tactic, difference_win_rate))
+    for category, eval in categories.items():
+        for _ in range(5): # choose 10 tactics from each category randomly
+            evaluation_tactic = random.choice(eval)
+            classical_max = play_deterministic(evaluation_tactic)
+            quantum_max = play_quantum(evaluation_tactic)
+            difference_win_rate = np.round(quantum_max, 3) - np.round(classical_max, 3)
+            differences.append((category, evaluation_tactic, difference_win_rate))
 
     differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
-    for tactic, difference_win_rate in differences:
+    for category, evaluation_tactic, difference_win_rate in differences:
+        print("category: ", category)
         print("evaluation_tactic = ")
-        for i in tactic: print(i)
+        for i in evaluation_tactic: print(i)
         print("difference = ", difference_win_rate)
 
 

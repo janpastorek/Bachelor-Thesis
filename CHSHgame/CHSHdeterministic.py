@@ -39,23 +39,43 @@ class Environment(CHSH.abstractEnvironment):
 
     def evaluate(self, question, response):
         """ :returns winning accuracy to input question based on response """
-        self.state = [0 for i in range(len(self.evaluation_tactic))]
-        answer = (self.possible_answers[question[0]][response[0]],self.possible_answers[question[1]][response[1]])
+        self.state = [0 for _ in range(len(self.evaluation_tactic))]
+        answer = (self.possible_answers[question[0]][response[0]], self.possible_answers[question[1]][response[1]])
         self.state[self.index(answer)] = 1
         return self.measure_analytic()
+
 
     def play_all_strategies(self):
         """ plays 16 different strategies,evaluate each and :returns: the best accuracy from all strategies """
         # TODO: Now it plays only 4 ? I miss some loop
         accuracies = []
         result = []
-        for a in range(len(self.possible_answers)):
-            for b in range(len(self.possible_answers)):
+        # for a in range(len(self.possible_answers)):
+        #     for b in range(len(self.possible_answers)):
+        #         for q in range(len(self.evaluation_tactic)):
+        #             question = [self.a[q], self.b[q]]
+        #             result.append(self.evaluate(question, (a, b)))
+        #         accuracies.append(self.calc_accuracy(result))
+        #         result = []
+        for r_A in self.responses:
+            for r_B in self.responses:
                 for q in range(len(self.evaluation_tactic)):
                     question = [self.a[q], self.b[q]]
-                    result.append(self.evaluate(question, (a, b)))
+                    response_to_this_question = r_A[self.a[q]], r_B[self.b[q]]
+                    result.append(self.evaluate(question, response_to_this_question))
                 accuracies.append(self.calc_accuracy(result))
                 result = []
+
+        # for q in range(len(self.evaluation_tactic)):
+        #     question = [self.a[q], self.b[q]]
+        #     for a in self.possible_answers[question[0]]:
+        #         self.possible_answers[question[0]] = a
+        #         for b in self.possible_answers[question[1]]:  # TODO popnem z moznosti tu 1
+        #             self.possible_answers[question[1]] = b
+        #             result.append(self.evaluate(question, (a, b)))
+        #
+        #     accuracies.append(self.calc_accuracy(result))
+        #     result = []
 
         print(accuracies)
         return max(accuracies)
