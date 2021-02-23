@@ -1,7 +1,7 @@
 from math import sqrt
 
 import matplotlib.pyplot as plt
-from qiskit.extensions import RYGate, RZGate, RXGate, IGate
+from qiskit.extensions import RYGate, RZGate, RXGate, IGate, CXGate
 from sklearn.preprocessing import StandardScaler
 
 from LinearModel import LinearModel
@@ -100,6 +100,8 @@ class abstractEnvironment(ABC):
             return RYGate
         elif gate == "rz":
             return RZGate
+        elif gate == "cx":
+            return CXGate
         else:
             return IGate
 
