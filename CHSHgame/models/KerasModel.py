@@ -67,12 +67,12 @@ class KerasModel(RegressionModel):
         return self.dnn.predict(X)
 
     @override
-    def sgd(self, X, Y, learning_rate, __):
+    def sgd(self, X, Y, learning_rate, momentum):
         # Train the model
 
         if not self.compiled:
             self.dnn.compile(loss='mse',
-                             optimizer=Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999),
+                             optimizer=Adam(lr=learning_rate, beta_1=momentum, beta_2=0.999),
                              metrics=['mae'])
             self.compiled = True
 
@@ -87,7 +87,7 @@ class KerasModel(RegressionModel):
     @override
     def load_weights(self, _):
         # load json and create model
-        json_file = open('.training/model.json', 'r')
+        json_file = open('../.training/model.json', 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         self.dnn = model_from_json(loaded_model_json)
@@ -99,7 +99,7 @@ class KerasModel(RegressionModel):
     def save_weights(self, _):
         # serialize model to JSON
         model_json = self.dnn.to_json()
-        with open(".training/model.json", "w") as json_file:
+        with open("../.training/model.json", "w") as json_file:
             json_file.write(model_json)
         # serialize weights to HDF5
         self.dnn.save_weights(".training/model.h5")

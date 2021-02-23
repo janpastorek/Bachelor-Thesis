@@ -6,7 +6,7 @@ import numpy as np
 from qiskit.extensions import RYGate
 
 from CHSH import abstractEnvironment, override
-from GeneticAlg import GeneticAlg
+from optimalizers.GeneticAlg import GeneticAlg
 
 
 class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):

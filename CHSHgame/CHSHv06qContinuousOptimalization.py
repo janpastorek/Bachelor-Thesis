@@ -3,8 +3,8 @@ from math import sqrt
 import numpy as np
 
 import CHSH
-from CHSH import Agent, Game
-from CHSHv05quantumGeneticOptimalization import CHSHgeneticOptimizer
+from CHSH import BasicAgent, Game
+from CHSHv05qGeneticOptimalization import CHSHgeneticOptimizer
 
 
 class Environment(CHSH.abstractEnvironment):
@@ -127,8 +127,8 @@ if __name__ == '__main__':
     env = Environment(n_questions, evaluation_tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                  eps_decay=0.9995, alpha=0.5, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                       eps_decay=0.9995, alpha=0.5, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
     # scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
 

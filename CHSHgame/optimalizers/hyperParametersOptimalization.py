@@ -47,8 +47,8 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         N = math.floor(x[-1])
 
         env = self.CHSH.Environment(self.n_questions, self.evaluation_tactic, self.max_gates)
-        agent = self.CHSH.Agent(len(env.state), len(self.CHSH.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
-                                eps_decay=x[3], alpha=x[4], momentum=x[5])
+        agent = self.CHSH.BasicAgent(len(env.state), len(self.CHSH.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
+                                     eps_decay=x[3], alpha=x[4], momentum=x[5])
         scaler = get_scaler(env, N)
         batch_size = 32
 
@@ -70,7 +70,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
 
 if __name__ == "__main__":
     ## Solve to find optimal individual
-    from CHSHv02quantumDiscreteStatesActions import Environment
+    from CHSHv02qDiscreteStatesActions import Environment
 
     evaluation_tactic = [[1, 0, 0, 1],
                          [1, 0, 0, 1],

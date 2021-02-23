@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 from qiskit.extensions import RYGate, RZGate, RXGate, IGate
 from sklearn.preprocessing import StandardScaler
 
-from LinearModel import LinearModel
+from agents.BasicAgent import BasicAgent
+from agents.DQNAgent import DQNAgent
+from models.LinearModel import LinearModel
 
 
 def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=2):
@@ -22,7 +24,6 @@ def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=2):
     scaler = StandardScaler()
     scaler.fit(states)
     return scaler
-
 
 def show_plot_of(plot_this, label, place_line_at=()):
     # plot relevant information
@@ -107,57 +108,6 @@ class abstractEnvironment(ABC):
 import random
 
 
-class Agent:
-    """ Reinforcement learning agent """
-
-    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum, ALL_POSSIBLE_ACTIONS,
-                 model_type):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.gamma = gamma  # discount rate
-        self.epsilon = eps  # exploration rate
-        self.epsilon_min = eps_min
-        self.epsilon_decay = eps_decay
-        self.alpha = alpha
-        self.momentum = momentum
-        self.model = model_type(state_size, action_size)
-        self.ALL_POSSIBLE_ACTIONS = ALL_POSSIBLE_ACTIONS
-
-    def act(self, state):
-        """ :returns action based on neural model prediction / epsilon greedy """
-
-        if np.random.rand() <= self.epsilon:
-            choice = random.randint(0, self.action_size - 1)
-            return self.ALL_POSSIBLE_ACTIONS[choice], choice
-        act_values = self.model.predict(state)
-        choice = np.argmax(act_values[0])
-        return self.ALL_POSSIBLE_ACTIONS[choice], choice
-
-    def train(self, state, action, reward, next_state, done):
-        """ performs one training step of neural network """
-        if done:
-            target = reward
-        else:
-            target = reward + self.gamma * np.amax(self.model.predict(next_state), axis=1)
-
-        target_full = self.model.predict(state)
-        target_full[0, action] = target
-
-        # Run one training step
-        self.model.sgd(state, target_full, self.alpha, self.momentum)
-
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-
-    def load(self, name):
-        """ loads weights into model """
-        self.model.load_weights(name)
-
-    def save(self, name):
-        """ saves weight into model """
-        self.model.save_weights(name)
-
-
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -168,9 +118,10 @@ import numpy as np
 class Game:
     """ creates CHSH game framework for easier manipulation """
 
-    def __init__(self, scaler=None, round_to=2):
+    def __init__(self, scaler=None, round_to=2, batch_size=32):
         self.scaler = scaler
         self.round_to = round_to
+        self.batch_size = batch_size
 
     def play_one_episode(self, agent, env, DO):
         """ Plays one episode of CHSH training
@@ -178,10 +129,8 @@ class Game:
         # in this version we will NOT use "exploring starts" method
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
-        if self.scaler != None:
-            state = self.scaler.transform([state])
-        else:
-            state = np.array([state], dtype=np.float64)
+        if self.scaler != None: state = self.scaler.transform([state])
+        else: state = np.array([np.round(state, self.round_to)], dtype=np.float64)
         done = False
 
         # be aware of the timing
@@ -192,12 +141,14 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            if self.scaler != None:
-                next_state = self.scaler.transform([np.round(next_state, self.round_to)])
-            else:
-                next_state = np.array([np.round(next_state, self.round_to)], dtype=np.float64)
+            if self.scaler != None: next_state = self.scaler.transform([np.round(next_state, self.round_to)])
+            else: next_state = np.array([np.round(next_state, self.round_to)], dtype=np.float64)
             if DO == 'train':
-                agent.train(np.round(state, self.round_to), action[1], reward, next_state, done)
+                if type(agent) == BasicAgent:
+                    agent.train(state, action[1], reward, next_state, done)
+                elif type(agent) == DQNAgent:
+                    agent.update_replay_memory(state, action[1], reward, next_state, done)
+                    agent.replay(self.batch_size)
             state = next_state.copy()
             rew_accum += reward
         print(env.history_actions)
@@ -289,17 +240,17 @@ def generate_only_interesting_tactics(size=4):
     return list(interesting_evaluation.keys())
 
 
-import CHSHdeterministic
+import CHSHv00deterministic
 
 
 def play_deterministic(tactic):
     """ Learns to play the best classic strategy according to tactic """
-    env = CHSHdeterministic.Environment(tactic)
+    env = CHSHv00deterministic.Environment(tactic)
     best = env.play_all_strategies()
     return best
 
 
-import CHSHv02quantumDiscreteStatesActions
+import CHSHv02qDiscreteStatesActions
 
 
 def play_quantum(evaluation_tactic):
@@ -330,16 +281,17 @@ def play_quantum(evaluation_tactic):
     best = 0
 
     for state in states:
-        env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions, evaluation_tactic, max_gates,
-                                                              initial_state=state)
+        env = CHSHv02qDiscreteStatesActions.Environment(n_questions, evaluation_tactic, max_gates,
+                                                        initial_state=state)
         for alpha in learning_rates:
             for gamma in gammas:
                 env.reset()
                 # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-                agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
-                              eps_min=0.01,
-                              eps_decay=0.9995, alpha=alpha, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-                              model_type=LinearModel)
+                agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
+                                   eps_min=0.01,
+                                   eps_decay=0.9995, alpha=alpha, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+                                   model_type=LinearModel)
+
                 # scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
                 batch_size = 128
 
@@ -377,7 +329,7 @@ def max_entangled_difference(n):
 
     differences = []
     for category, eval in categories.items():
-        for _ in range(5): # choose 10 tactics from each category randomly
+        for _ in range(5):  # choose 10 tactics from each category randomly
             evaluation_tactic = random.choice(eval)
             classical_max = play_deterministic(evaluation_tactic)
             quantum_max = play_quantum(evaluation_tactic)

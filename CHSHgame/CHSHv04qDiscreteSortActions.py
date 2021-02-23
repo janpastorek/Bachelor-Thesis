@@ -3,7 +3,7 @@ from math import sqrt, pi
 
 import numpy as np
 from qiskit.extensions import RYGate
-from CHSH import Game, Agent, get_scaler
+from CHSH import Game, BasicAgent, get_scaler
 import CHSH
 
 
@@ -136,8 +136,8 @@ if __name__ == '__main__':
 
     env = Environment(n_questions, tactic, max_gates)
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
-                  eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
+                       eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
     scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=roundTo)
     batch_size = 128
 

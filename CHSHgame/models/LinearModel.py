@@ -1,6 +1,6 @@
 import numpy as np
 
-from RegressionModel import RegressionModel
+from models.RegressionModel import RegressionModel
 
 
 def override(f): return f
