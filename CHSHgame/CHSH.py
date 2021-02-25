@@ -25,6 +25,7 @@ def get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=2):
     scaler.fit(states)
     return scaler
 
+
 def show_plot_of(plot_this, label, place_line_at=()):
     # plot relevant information
     fig_dims = (10, 6)
@@ -57,7 +58,7 @@ class abstractEnvironment(ABC):
         self.history_actions = []
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [self.count_gates()], dtype=np.float64)
         return self.repr_state
 
     @abstractmethod
@@ -107,7 +108,6 @@ class abstractEnvironment(ABC):
 
 import random
 
-
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -129,7 +129,7 @@ class Game:
         # in this version we will NOT use "exploring starts" method
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
-        if self.scaler != None: state = self.scaler.transform([state])
+        if self.scaler is not None: state = self.scaler.transform([state])
         else: state = np.array([np.round(state, self.round_to)], dtype=np.float64)
         done = False
 
@@ -141,7 +141,7 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            if self.scaler != None: next_state = self.scaler.transform([np.round(next_state, self.round_to)])
+            if self.scaler is not None: next_state = self.scaler.transform([np.round(next_state, self.round_to)])
             else: next_state = np.array([np.round(next_state, self.round_to)], dtype=np.float64)
             if DO == 'train':
                 if type(agent) == BasicAgent:
@@ -228,6 +228,8 @@ def generate_only_interesting_tactics(size=4):
     print(len(tactics))
     interesting_evaluation = dict()
     for tactic in tactics:
+        for riadok in tactic:
+            if 1 not in riadok: break
         try:
             if interesting_evaluation[(tactic[1], tactic[0], tactic[3], tactic[2])]: pass
         except KeyError:
@@ -301,7 +303,6 @@ def play_quantum(evaluation_tactic):
 
                 # save portfolio value for each episode
                 np.save(f'.training/train.npy', portfolio_val)
-                # TODO: what if it would be better to use just maximal that it could find in training portfolio?
                 # portfolio_val = game.evaluate_test(agent, env)
                 # return portfolio_val[0][0]  # acc
 
@@ -329,14 +330,14 @@ def max_entangled_difference(n):
 
     differences = []
     for category, eval in categories.items():
-        for _ in range(5):  # choose 10 tactics from each category randomly
+        for _ in range(3):  # choose 10 tactics from each category randomly
             evaluation_tactic = random.choice(eval)
             classical_max = play_deterministic(evaluation_tactic)
             quantum_max = play_quantum(evaluation_tactic)
-            difference_win_rate = np.round(quantum_max, 3) - np.round(classical_max, 3)
+            difference_win_rate = 0 if classical_max > quantum_max else quantum_max - classical_max
             differences.append((category, evaluation_tactic, difference_win_rate))
 
-    differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
+    # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for category, evaluation_tactic, difference_win_rate in differences:
         print("category: ", category)
         print("evaluation_tactic = ")

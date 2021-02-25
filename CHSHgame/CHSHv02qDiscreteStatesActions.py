@@ -5,7 +5,9 @@ from qiskit.circuit.library import IGate
 
 import CHSH
 from CHSH import Game
+from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
+from models.LinearModel import LinearModel
 
 
 class Environment(CHSH.abstractEnvironment):
@@ -21,7 +23,7 @@ class Environment(CHSH.abstractEnvironment):
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [self.count_gates()], dtype=np.float64)
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
         # input, generate "questions" in equal number
@@ -85,6 +87,7 @@ class Environment(CHSH.abstractEnvironment):
             self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
 
             result.append(self.measure_analytic())
+        self.repr_state[-1] = len(self.history_actions)
         return result
 
     @CHSH.override
@@ -103,19 +106,19 @@ class Environment(CHSH.abstractEnvironment):
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
-        reward = rozdiel_acc * 100 / (self.count_gates() + 1)
-        if reward <= 0: reward *= 10
+        reward = rozdiel_acc * 100
+        reward -= 2
 
         # ends when it has applied max number of gates / xxr0
-        # if self.accuracy > self.max_acc:
-        #     done = True
+        # if np.round(self.max_acc, 2) <= np.round(self.accuracy, 2):
+        #     # done = True
         #     self.max_acc = self.accuracy
         #     reward += 50 * (1 / (self.count_gates() + 1))
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
             # if np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
-            #     reward += 200 * (1 / (self.count_gates() + 1))
+            #     reward += 5 * (1 / (self.count_gates() + 1))
             # else:
             #     reward -= 10 * self.count_gates()
 
@@ -137,8 +140,8 @@ from CHSH import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(360/2 * i) for i in range(1, 2) for axis in 'xyz']
-    ACTIONS = ['r' + axis + str(360/2* i) for i in range(1, 2) for axis in 'xyz']
+    ACTIONS2 = ['r' + axis + str(360/4 * i) for i in range(1, 2) for axis in 'xyz']
+    ACTIONS = ['r' + axis + str(-360/4 * i) for i in range(1, 2) for axis in 'xyz']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -148,7 +151,7 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
 
-    N = 2000
+    N = 4000
     n_questions = 4
     evaluation_tactic = [[1, 0, 0, 1],
                          [1, 0, 0, 1],
@@ -157,15 +160,15 @@ if __name__ == '__main__':
     max_gates = 10
     round_to = 3
     env = Environment(n_questions, evaluation_tactic, max_gates)
-    hidden_dim = [len(env.repr_state), len(ALL_POSSIBLE_ACTIONS)]
+    hidden_dim = [len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-    #                    eps_decay=0.9995, alpha=0.1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
     #                    model_type=LinearModel)
 
-    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=1, hidden_layers=len(hidden_dim),
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate= 0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)

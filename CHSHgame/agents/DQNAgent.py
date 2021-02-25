@@ -7,10 +7,10 @@ from models.MLPModel import MLP
 ### The experience replay memory ###
 class ReplayBuffer:
     def __init__(self, obs_dim, act_dim, size):
-        self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float32)
-        self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float32)
+        self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float64)
+        self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float64)
         self.acts_buf = np.zeros(size, dtype=np.uint8)
-        self.rews_buf = np.zeros(size, dtype=np.float32)
+        self.rews_buf = np.zeros(size, dtype=np.float64)
         self.done_buf = np.zeros(size, dtype=np.uint8)
         self.ptr, self.size, self.max_size = 0, 0, size
 
@@ -23,7 +23,7 @@ class ReplayBuffer:
         self.ptr = (self.ptr + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
-    def sample_batch(self, batch_size=32):
+    def sample_batch(self, batch_size=64):
         idxs = np.random.randint(0, self.size, size=batch_size)
         return dict(s=self.obs1_buf[idxs],
                     s2=self.obs2_buf[idxs],
@@ -92,7 +92,7 @@ class DQNAgent(object):
         choice = np.argmax(act_values[0])
         return self.ALL_POSSIBLE_ACTIONS[choice], choice
 
-    def replay(self, batch_size=32):
+    def replay(self, batch_size=64):
         # first check if replay buffer contains enough data
         if self.memory.size < batch_size:
             return
