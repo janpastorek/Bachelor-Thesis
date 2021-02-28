@@ -66,6 +66,13 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Refactoring a väčšia abstrakcia hrier, genetických algoritmov etc. </li>
 </ul>
 <li> 23.2 - 2.3 </li>
+<ul>
+<li> Implementoval som PyTorch Deep Reinforcement DQN Agenta</li>
+<li> Pracoval som na funkcii, ktorá porovnáva najlepšiu klasickú a najlepšiu kvantovú taktiku. A vyberie také hry, ktoré majú najväčšie rozdiely - upravil som ju, aby fungovala spravne.</li>
+<li> Stretol som sa so skolitelom - urcili sme si uz finalne ciele mojej bakalarky</li>
+<li> Refactoring. </li>
+<li> Pracoval som na kapitole NonLocal games v LaTeXu</li>
+</ul>
 </ul>
 </details>
 
