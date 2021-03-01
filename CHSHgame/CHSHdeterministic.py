@@ -6,7 +6,7 @@ import CHSH
 class Environment(CHSH.abstractEnvironment):
     """ creates CHSH for classic deterministic strategies"""
 
-    def __init__(self, evaluation_tactic):
+    def __init__(self, game_type):
         self.a = []
         self.b = []
         for x in range(2):
@@ -14,7 +14,7 @@ class Environment(CHSH.abstractEnvironment):
                 self.a.append(x)
                 self.b.append(y)
 
-        self.evaluation_tactic = evaluation_tactic
+        self.game_type = game_type
         self.possible_answers = dict()
         self.possible_answers[0] = (0, 1)
         self.possible_answers[1] = (0, 1)
@@ -39,7 +39,7 @@ class Environment(CHSH.abstractEnvironment):
 
     def evaluate(self, question, response):
         """ :returns winning accuracy to input question based on response """
-        self.state = [0 for _ in range(len(self.evaluation_tactic))]
+        self.state = [0 for _ in range(len(self.game_type))]
         answer = (self.possible_answers[question[0]][response[0]], self.possible_answers[question[1]][response[1]])
         self.state[self.index(answer)] = 1
         return self.measure_analytic()
@@ -52,21 +52,21 @@ class Environment(CHSH.abstractEnvironment):
         result = []
         # for a in range(len(self.possible_answers)):
         #     for b in range(len(self.possible_answers)):
-        #         for q in range(len(self.evaluation_tactic)):
+        #         for q in range(len(self.game_type)):
         #             question = [self.a[q], self.b[q]]
         #             result.append(self.evaluate(question, (a, b)))
         #         accuracies.append(self.calc_accuracy(result))
         #         result = []
         for r_A in self.responses:
             for r_B in self.responses:
-                for q in range(len(self.evaluation_tactic)):
+                for q in range(len(self.game_type)):
                     question = [self.a[q], self.b[q]]
                     response_to_this_question = r_A[self.a[q]], r_B[self.b[q]]
                     result.append(self.evaluate(question, response_to_this_question))
                 accuracies.append(self.calc_accuracy(result))
                 result = []
 
-        # for q in range(len(self.evaluation_tactic)):
+        # for q in range(len(self.game_type)):
         #     question = [self.a[q], self.b[q]]
         #     for a in self.possible_answers[question[0]]:
         #         self.possible_answers[question[0]] = a
@@ -77,5 +77,5 @@ class Environment(CHSH.abstractEnvironment):
         #     accuracies.append(self.calc_accuracy(result))
         #     result = []
 
-        print(accuracies)
+        # print(accuracies)
         return max(accuracies)

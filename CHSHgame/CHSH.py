@@ -70,12 +70,12 @@ class abstractEnvironment(ABC):
         return weights
 
     def calc_accuracy(self, result):
-        """ :returns winning accuracy / win rate based on winning evaluation_tactic """
+        """ :returns winning accuracy / win rate based on winning game_type """
         win_rate = 0
-        for x, riadok in enumerate(self.evaluation_tactic):
+        for x, riadok in enumerate(self.game_type):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
-        win_rate = win_rate * 1 / len(self.evaluation_tactic)
+        win_rate = win_rate * 1 / len(self.game_type)
         return win_rate
 
     def count_gates(self):
@@ -271,24 +271,33 @@ class Game:
 import itertools
 
 
-def generate_only_interesting_tactics(size=4):
+def game_with_rows_all_zeroes(game):
+    """ Controls whether there is not full zero row in game """
+    for row in game:
+        if 1 not in row:
+            return True
+    return False
+
+
+def generate_only_interesting_games(size=4):
     """ Generates only interesting evaluation tactics
     because some are almost duplicates and some will have no difference between classic and quantum strategies. """
     product = list(itertools.product([0, 1], repeat=size))
-    tactics = list(itertools.product(product, repeat=size))
-    print(len(tactics))
-    interesting_evaluation = dict()
-    for tactic in tactics:
+    games = list(itertools.product(product, repeat=size))
+    print(len(games))
+    interesting_games = dict()
+    for game in games:
+        if game_with_rows_all_zeroes(game): continue  # hry, ktore maju nulove riadky su nezaujimave tiez
         try:
-            if interesting_evaluation[(tactic[1], tactic[0], tactic[3], tactic[2])]: pass
+            if interesting_games[(game[1], game[0], game[3], game[2])]: pass  # x za y, symetricke hry
         except KeyError:
             try:
-                if interesting_evaluation[(tactic[3], tactic[2], tactic[1], tactic[0])]: pass
+                if interesting_games[(game[3], game[2], game[1], game[0])]: pass  # 0 za 1, symetricke hry
             except KeyError:
-                interesting_evaluation[tactic] = True
+                interesting_games[game] = True
 
-    print(len(interesting_evaluation.keys()))
-    return list(interesting_evaluation.keys())
+    print(len(interesting_games.keys()))
+    return list(interesting_games.keys())
 
 
 import CHSHdeterministic
@@ -351,57 +360,74 @@ def play_quantum(evaluation_tactic):
 
                 # save portfolio value for each episode
                 np.save(f'.training/train.npy', portfolio_val)
-                # TODO: what if it would be better to use just maximal that it could find in training portfolio?
                 # portfolio_val = game.evaluate_test(agent, env)
                 # return portfolio_val[0][0]  # acc
 
                 load_acc = np.load(f'.training/train.npy')[0].max()
+
+                # take the best found quantum, not just learned value
                 if load_acc > best:
                     best = load_acc
     return best
 
 
-def categorize(cutTactics):
+def calc_difficulty_of_game(game):
+    diff = 0
+    for row in game:
+        for x in row:
+            if x == 1:
+                diff += 1
+    return diff
+
+
+def categorize(cutGames):
     categories = dict()
-    for tactic in cutTactics:
-        classical_max = play_deterministic(tactic)
+    for game in cutGames:
+        classical_max = play_deterministic(game)
         if classical_max not in (0, 1):  # these are not interesting
             try:
-                categories[classical_max].append(tactic)
+                categories[classical_max][calc_difficulty_of_game(game)].append(game)
             except KeyError:
-                categories[classical_max] = [tactic]
+                try: categories[classical_max][calc_difficulty_of_game(game)] = [game]
+                except KeyError: categories[classical_max] = {calc_difficulty_of_game(game): [game]}
     return categories
 
 
-def max_entangled_difference(n):
+def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
-    categories = categorize(generate_only_interesting_tactics(n))
+    categories = categorize(generate_only_interesting_games(size_of_game))
 
     differences = []
-    for category, eval in categories.items():
-        for _ in range(5): # choose 10 tactics from each category randomly
-            evaluation_tactic = random.choice(eval)
-            classical_max = play_deterministic(evaluation_tactic)
-            quantum_max = play_quantum(evaluation_tactic)
-            difference_win_rate = np.round(quantum_max, 3) - np.round(classical_max, 3)
-            differences.append((category, evaluation_tactic, difference_win_rate))
+    for category, difficulties in categories.items():
+        for difficulty in difficulties.keys():
+            for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
+                game_type = random.choice(categories[category][difficulty])
+                classical_max = play_deterministic(game_type)
+                # quantum_max = play_quantum(game_type) #TODO: vratiti spet
+                quantum_max = classical_max
+                difference_win_rate = np.round(quantum_max, 6) - np.round(classical_max, 6)
+                differences.append((category, difficulty, game_type, difference_win_rate))
 
-    differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
-    for category, evaluation_tactic, difference_win_rate in differences:
+    # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
+    for category, difficulty, game_type, difference_win_rate in differences:
         print("category: ", category)
-        print("evaluation_tactic = ")
-        for i in evaluation_tactic: print(i)
+        print("difficulty: ", difficulty)
+        print("game = ")
+        for i in game_type: print(i)
         print("difference = ", difference_win_rate)
+        print()
+
+    # TODO: tu by to chcelo ukladat tie taktiky ktore uz najde, tu treba dorobit tu databazku
 
 
 if __name__ == '__main__':
     # max_entangled_difference(size=4)
-    # evaluation_tactic = [[1, 0, 0, 1],
+    # game_type = [[1, 0, 0, 1],
     #                      [1, 0, 0, 1],
     #                      [1, 0, 0, 1],
     #                      [0, 1, 1, 0]]
-    # print(play_deterministic(evaluation_tactic))
+    # print(play_deterministic(game_type))
 
-    # print(len(generate_only_interesting_tactics(4)))
+    # print(len(generate_only_interesting_games(4)))
 
-    max_entangled_difference(4)
+    max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=1)

@@ -182,7 +182,7 @@ class TestCHSH(unittest.TestCase):
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [0, 1, 1, 0]]
-        env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions=4,evaluation_tactic=tactic,max_gates=10)
+        env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions=4, game_type=tactic, max_gates=10)
         for a in dokopy:
             env.step(a)
 

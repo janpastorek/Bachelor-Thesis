@@ -12,13 +12,13 @@ from KerasModel import KerasModel
 class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
-    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2,
+    def __init__(self, n_questions, game_type, max_gates, num_players=2,
                  initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
-        self.evaluation_tactic = evaluation_tactic
+        self.game_type = game_type
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
@@ -176,8 +176,8 @@ if __name__ == '__main__':
     round_to = 2
     # [ 0+0j, 0+0j, 0+0j, 0+0j, -0.707+0j, 0+0j, 0.707+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j ]
     env = Environment(n_questions, evaluation_tactic, max_gates,
-                      initial_state=[0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, 0 + 0j,
-                                     0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
+                      initial_state=np.array([0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, 0 + 0j,
+                                     0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j]))
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
