@@ -54,7 +54,9 @@ class KerasModel(RegressionModel):
         self.dnn = Sequential()
 
         self.dnn.add(layers.Dense(input_dim, activation='relu', input_shape=[input_dim]))
-        self.dnn.add(layers.Dense(32, activation='relu'))
+        self.dnn.add(layers.Dense(10, activation='relu'))
+        self.dnn.add(layers.Dense(10, activation='relu'))
+        self.dnn.add(layers.Dense(8, activation='relu'))
 
         # output layer
         self.dnn.add(layers.Dense(n_action))
@@ -64,15 +66,16 @@ class KerasModel(RegressionModel):
 
     @override
     def predict(self, X):
+        assert (len(X.shape) == 2)
         return self.dnn.predict(X)
 
     @override
-    def sgd(self, X, Y, learning_rate, __):
+    def sgd(self, X, Y, learning_rate, momentum):
         # Train the model
-
+        assert (len(X.shape) == 2)
         if not self.compiled:
             self.dnn.compile(loss='mse',
-                             optimizer=Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999),
+                             optimizer=Adam(lr=learning_rate, beta_1=momentum, beta_2=0.999),
                              metrics=['mae'])
             self.compiled = True
 

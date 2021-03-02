@@ -1,7 +1,8 @@
+import itertools
 from math import sqrt, pi
 
 import numpy as np
-from qiskit.circuit.library import IGate
+from qiskit.circuit.library import IGate, CXGate
 
 import CHSH
 from CHSH import Game, Agent
@@ -11,13 +12,13 @@ from KerasModel import KerasModel
 class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
-    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2,
+    def __init__(self, n_questions, game_type, max_gates, num_players=2,
                  initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
-        self.evaluation_tactic = evaluation_tactic
+        self.game_type = game_type
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
@@ -27,7 +28,10 @@ class Environment(CHSH.abstractEnvironment):
         # input, generate "questions" in equal number
         self.a = []
         self.b = []
-        for x in range(2): # TODO: Number of questions can be derived from evaluation tactic, this can be abstracted
+
+        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
+
+        for x in range(2):  # TODO: Number of questions can be derived from evaluation tactic, this can be abstracted
             for y in range(2):
                 self.a.append(x)
                 self.b.append(y)
@@ -43,7 +47,7 @@ class Environment(CHSH.abstractEnvironment):
         """ Calculates the state according to previous actions"""
         result = []
 
-        for g in range(self.n_questions):
+        for g, q in enumerate(self.questions):
             # Alice - a and Bob - b share an entangled state
             # The input to alice and bob is random
             # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
@@ -65,27 +69,38 @@ class Environment(CHSH.abstractEnvironment):
                     continue
 
                 to_whom = action[0:2]
-                gate_angle = np.array([action[4:]], dtype=np.float64) * self.velocity
+                ancilla = action[2] == 'a'
+                try:
+                    gate_angle = np.array([action[4:]], dtype=np.float64) * self.velocity
+                except ValueError:
+                    gate_angle = 0
 
-                if self.a[g] == 0 and to_whom == 'a0':
-                    self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
-                                           self.state)
+                if gate == CXGate:
+                    if to_whom in 'a0a1':
+                        self.state = np.matmul(np.kron(CXGate(ctrl_state=1).to_matrix(), np.identity(4), self.state))
+                    elif to_whom in 'b0b1':
+                        self.state = np.matmul(np.kron(np.identity(4), CXGate(ctrl_state=0).to_matrix(), self.state))
+                    continue
 
-                if self.a[g] == 1 and to_whom == 'a1':
-                    self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
-                                           self.state)
+                if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
+                    if ancilla:
+                        self.state = np.matmul(np.kron(np.kron(gate((gate_angle * pi / 180).item()).to_matrix()), np.identity(2), np.identity(4)),
+                                               self.state)
+                    else:
+                        self.state = np.matmul(np.kron(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()), np.identity(4)),
+                                               self.state)
 
-                if self.b[g] == 0 and to_whom == 'b0':
-                    self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
-                                           self.state)
+                if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
+                    if ancilla:
+                        self.state = np.matmul(np.kron(np.identity(4), np.kron(np.identity(2))), gate((gate_angle * pi / 180).item()).to_matrix(),
+                                               self.state)
+                    else:
+                        self.state = np.matmul(np.kron(np.identity(4), np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))),
+                                               self.state)
 
-                if self.b[g] == 1 and to_whom == 'b1':
-                    self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
-                                           self.state)
+            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy() # TODO: co tam teraz ulozit?
 
-            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
-
-            result.append(self.measure_analytic())
+            result.append(self.measure_analytic())  #TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
         return result
 
     @CHSH.override
@@ -138,8 +153,8 @@ from CHSH import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 / 2 * i) for i in range(1, 2) for axis in 'y']
-    ACTIONS = ['r' + axis + str(- 180 / 2 * i) for i in range(1, 2) for axis in 'y']
+    ACTIONS2 = [type + axis + str(360 * i) for i in range(1, 2) for axis in 'xyz' for type in 'ra']
+    ACTIONS = [type + axis + str(- 360 * i) for i in range(1, 2) for axis in 'y' for type in 'ra']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -149,6 +164,7 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    ALL_POSSIBLE_ACTIONS.append("cnot")
 
     N = 2000
     n_questions = 4
@@ -158,7 +174,10 @@ if __name__ == '__main__':
                          [0, 1, 1, 0]]
     max_gates = 10
     round_to = 2
-    env = Environment(n_questions, evaluation_tactic, max_gates)
+    # [ 0+0j, 0+0j, 0+0j, 0+0j, -0.707+0j, 0+0j, 0.707+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j ]
+    env = Environment(n_questions, evaluation_tactic, max_gates,
+                      initial_state=np.array([0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, 0 + 0j,
+                                     0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j]))
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,

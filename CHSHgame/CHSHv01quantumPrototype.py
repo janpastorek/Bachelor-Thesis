@@ -150,10 +150,10 @@ for x, riadok in enumerate(evaluation_tactic):
         win_rate1 += (stlpec * result[x][y])
 win_rate1 = win_rate1 * 1 / 4
 
-# test evaluation_tactic DONE
+# test game_type DONE
 print(win_rate1)
 
-# assert (win_rate==win_rate1) # test evaluation_tactic DONE
+# assert (win_rate==win_rate1) # test game_type DONE
 
 #     # Convert the 4 state measurement result to two 1-bit results
 #     if result == 0:
