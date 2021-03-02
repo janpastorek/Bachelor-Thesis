@@ -1,7 +1,7 @@
 from math import sqrt
 
 import matplotlib.pyplot as plt
-from qiskit.extensions import RYGate, RZGate, RXGate, IGate, CXGate
+from qiskit.extensions import RYGate, RZGate, RXGate, IGate
 from sklearn.preprocessing import StandardScaler
 
 from agents.BasicAgent import BasicAgent
@@ -84,7 +84,7 @@ class abstractEnvironment(ABC):
         """ :returns count of relevant gates """
         count = 0
         for action in self.history_actions:
-            if action in {"xxr0"}: # ending action
+            if action in {"xxr0"}:  # ending action
                 pass
             elif action in {"smallerAngle", "biggerAngle"}:
                 count += 0.5
@@ -252,18 +252,19 @@ def generate_only_interesting_games(size=4):
 import CHSHv00deterministic
 
 
-def play_deterministic(tactic):
-    """ Learns to play the best classic strategy according to tactic """
-    env = CHSHv00deterministic.Environment(tactic)
-    best = env.play_all_strategies()
-    return best
+def play_deterministic(game, which="best"):
+    """ Learns to play the best classic strategy according to game """
+    env = CHSHv00deterministic.Environment(game)
+    best, worst = env.play_all_strategies()
+    if (which == "best"): return best
+    return worst
 
 
 import CHSHv02qDiscreteStatesActions
 
 
-def play_quantum(evaluation_tactic):
-    """ Learns to play the best quantum strategy according to tactic """
+def play_quantum(game, which="best"):
+    """ Learns to play the best quantum strategy according to game """
     ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
     ACTIONS = ['r' + axis + str(- 180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
     ACTIONS2.extend(ACTIONS)
@@ -288,9 +289,10 @@ def play_quantum(evaluation_tactic):
               np.array([0, 0, 1, 0], dtype=np.float64)]
 
     best = 0
+    worst = 1
 
     for state in states:
-        env = CHSHv02qDiscreteStatesActions.Environment(n_questions, evaluation_tactic, max_gates,
+        env = CHSHv02qDiscreteStatesActions.Environment(n_questions, game, max_gates,
                                                         initial_state=state)
         for alpha in learning_rates:
             for gamma in gammas:
@@ -313,12 +315,20 @@ def play_quantum(evaluation_tactic):
                 # portfolio_val = game.evaluate_test(agent, env)
                 # return portfolio_val[0][0]  # acc
 
-                load_acc = np.load(f'.training/train.npy')[0].max()
+                load_acc = np.load(f'.training/train.npy')[0]
+                load_acc_max = load_acc.max()
+                load_acc_min = load_acc.min()
 
                 # take the best found quantum, not just learned value
-                if load_acc > best:
-                    best = load_acc
-    return best
+                if load_acc_max > best:
+                    best = load_acc_max
+
+                # take the best found quantum, not just learned value
+                if load_acc_min < worst:
+                    worst = load_acc_min
+
+    if (which == "best"): return best
+    return worst
 
 
 def calc_difficulty_of_game(game):
@@ -343,7 +353,7 @@ def categorize(cutGames):
     return categories
 
 
-def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5):
+def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5, best_or_worst="best"):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
     categories = categorize(generate_only_interesting_games(size_of_game))
 
@@ -352,10 +362,12 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
         for difficulty in difficulties.keys():
             for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
                 game_type = random.choice(categories[category][difficulty])
-                classical_max = play_deterministic(game_type)
-                # quantum_max = play_quantum(game_type) #TODO: vratiti spet
-                quantum_max = classical_max
-                difference_win_rate =  0 if classical_max > quantum_max else np.round(quantum_max, 6) - np.round(classical_max, 6)
+                classical_max = play_deterministic(game_type, best_or_worst)
+                quantum_max = play_quantum(game_type, best_or_worst)
+                if best_or_worst == "best":
+                    difference_win_rate = 0 if classical_max > quantum_max else np.round(quantum_max, 6) - np.round(classical_max, 6)
+                else:
+                    difference_win_rate = 0 if classical_max < quantum_max else np.round(classical_max, 6) - np.round(quantum_max, 6)
                 differences.append((category, difficulty, game_type, difference_win_rate))
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
@@ -367,7 +379,7 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
         print("difference = ", difference_win_rate)
         print()
 
-    # TODO: tu by to chcelo ukladat tie taktiky ktore uz najde, tu treba dorobit tu databazku
+    # TODO: tu by to chcelo ukladat tie taktiky ktore uz najde, tu treba dorobit tu databazku, pozor lebo teraz uz moze chciet pouzivatel aj najhorsi CHSH
 
 
 if __name__ == '__main__':
@@ -380,4 +392,4 @@ if __name__ == '__main__':
 
     # print(len(generate_only_interesting_games(4)))
 
-    max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=1)
+    max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=1, best_or_worst="best")

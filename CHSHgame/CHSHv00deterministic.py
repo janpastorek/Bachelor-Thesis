@@ -18,7 +18,8 @@ class Environment(CHSH.abstractEnvironment):
         self.possible_answers = dict()
         self.possible_answers[0] = (0, 1)
         self.possible_answers[1] = (0, 1)
-        self.responses = list(itertools.product([0, 1], repeat=2))
+        self.responses = list(
+            itertools.product([0, 1], repeat=2))  # TODO: ak bude treba robit viac otazok a viac hracov, tak toto bude treba zmenit na skalovanie
 
     @CHSH.override
     def reset(self):
@@ -43,7 +44,6 @@ class Environment(CHSH.abstractEnvironment):
         answer = (self.possible_answers[question[0]][response[0]], self.possible_answers[question[1]][response[1]])
         self.state[self.index(answer)] = 1
         return self.measure_analytic()
-
 
     def play_all_strategies(self):
         """ plays 16 different strategies,evaluate each and :returns: the best accuracy from all strategies """
@@ -78,4 +78,4 @@ class Environment(CHSH.abstractEnvironment):
         #     result = []
 
         # print(accuracies)
-        return max(accuracies)
+        return max(accuracies), min(accuracies)
