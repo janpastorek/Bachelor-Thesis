@@ -73,6 +73,16 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Refactoring. </li>
 <li> Pracoval som na kapitole NonLocal games v LaTeXu</li>
 </ul>
+<li> 2.3 - 9.3 </li>
+<ul>
+<li> Snazil som sa optimalizovat DQN agenta</li>
+<li> Implementoval som databazu, do ktorej sa budu ukladat uz preskumane hry, a ak sa znovu preskumaju, tak upsert ak sa najde lepsia hodnota.</li>
+<li> Stretol som sa so skolitelom - zhodnotili sme tohtotyzdnovu pracu</li>
+<li> Refactoring v triede Environment. </li>
+<li> Viacere parametre som povytiahol von, nech si to pouzivatel moze sam nastavit </li>
+<li> Pracoval som na kapitole NonLocal games v LaTeXe</li>
+<li> Pracoval som na kapitole Reinforcement learning v LaTeXe</li>
+</ul>
 </ul>
 </details>
 
