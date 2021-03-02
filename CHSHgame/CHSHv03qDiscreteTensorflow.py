@@ -79,7 +79,7 @@ class Environment(py_environment.PyEnvironment):
         weights = [abs(a) ** 2 for a in self.state]
         return weights
 
-    # Calculates winning accuracy / win rate based on winning evaluation_tactic
+    # Calculates winning accuracy / win rate based on winning game_type
     def calc_accuracy(self, result):
         win_rate = 0
         for x, riadok in enumerate(self.tactic):
