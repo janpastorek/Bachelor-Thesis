@@ -26,22 +26,22 @@ class Environment(CHSH.abstractEnvironment):
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
         # input, generate "questions" in equal number
-        self.a = []
-        self.b = []
+        # self.a = []
+        # self.b = []
 
-        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
-
-        for x in range(2):  # TODO: Number of questions can be derived from evaluation tactic, this can be abstracted
-            for y in range(2):
-                self.a.append(x)
-                self.b.append(y)
+        self.questions = list(itertools.product(list(range(self.n_questions//2)), repeat=self.num_players))
+        print(self.questions)
+        # for x in range(2):
+        #     for y in range(2):
+        #         self.a.append(x)
+        #         self.b.append(y)
 
         self.velocity = 1
 
     @CHSH.override
     def reset(self):
         self.velocity = 1
-        return super().reset()
+        return super().reset() # + np.array([len(self.history_actions)], dtype=np.float64)
 
     def calculate_state(self, history_actions):
         """ Calculates the state according to previous actions"""
@@ -56,6 +56,7 @@ class Environment(CHSH.abstractEnvironment):
             self.velocity = 1
 
             for action in history_actions:
+                # get info from action
                 if action == "biggerAngle":
                     self.velocity *= 2
                     continue
@@ -68,35 +69,38 @@ class Environment(CHSH.abstractEnvironment):
                     continue
 
                 to_whom = action[0:2]
-                ancilla = action[2] == 'a'
+                rotate_ancilla = action[2] == 'a'
                 try:
                     gate_angle = np.array([action[4:]], dtype=np.float64) * self.velocity
                 except ValueError:
                     gate_angle = 0
 
+                I_length = len(self.initial_state) ** (1 / self.num_players)
+
+                # apply action to state
+                operation = []
                 if gate == CXGate:
                     if to_whom in 'a0a1':
-                        self.state = np.matmul(np.kron(CXGate(ctrl_state=1).to_matrix(), np.identity(4), self.state))
+                        operation = np.kron(CXGate(ctrl_state=1).to_matrix(), np.identity(I_length))
                     elif to_whom in 'b0b1':
-                        self.state = np.matmul(np.kron(np.identity(4), CXGate(ctrl_state=0).to_matrix(), self.state))
-                    continue
+                        operation = np.kron(np.identity(I_length), CXGate(ctrl_state=0).to_matrix())
+                else:
+                    if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
+                        if rotate_ancilla: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
+                        else: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
+                        if self.num_players != 2: operation = np.kron(calc_operation, np.identity(I_length))
+                        else: operation = calc_operation
+                    if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
+                        if rotate_ancilla: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
+                        else: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
+                        if self.num_players != 2: operation = np.kron(np.identity(I_length), calc_operation)
+                        else: operation = calc_operation
 
-                if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
-                    if ancilla:
-                        self.state = np.matmul(np.kron(np.kron(gate((gate_angle * pi / 180).item()).to_matrix()), np.identity(2), np.identity(4)),
-                                               self.state)
-                    else:
-                        self.state = np.matmul(np.kron(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()), np.identity(4)),
-                                               self.state)
+                if operation != []:
+                    self.state = np.matmul(operation, self.state)
+                    operation = []
 
-                if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
-                    if ancilla:
-                        self.state = np.matmul(np.kron(np.identity(4), np.kron(np.identity(2))), gate((gate_angle * pi / 180).item()).to_matrix(),
-                                               self.state)
-                    else:
-                        self.state = np.matmul(np.kron(np.identity(4), np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))),
-                                               self.state)
-
+            # modify repr_state according to state
             self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()  # TODO: co tam teraz ulozit?
 
             result.append(self.measure_analytic())  # TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
@@ -163,7 +167,7 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    ALL_POSSIBLE_ACTIONS.append("cnot")
+    # ALL_POSSIBLE_ACTIONS.append("cnot")
 
     N = 2000
     n_questions = 4

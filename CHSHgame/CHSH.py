@@ -58,7 +58,7 @@ class abstractEnvironment(ABC):
         self.history_actions = []
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [self.count_gates()], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         return self.repr_state
 
     @abstractmethod
@@ -67,7 +67,7 @@ class abstractEnvironment(ABC):
         pass
 
     def measure_analytic(self):
-        """ :returns probabilities of 00,01,10,11 happening in matrix """
+        """ :returns probabilities of questions (e.g. 00,01,10,11) happening in matrix """
         weights = [abs(a) ** 2 for a in self.state]
         return weights
 
@@ -84,7 +84,7 @@ class abstractEnvironment(ABC):
         """ :returns count of relevant gates """
         count = 0
         for action in self.history_actions:
-            if action in {"xxr0"}:
+            if action in {"xxr0"}: # ending action
                 pass
             elif action in {"smallerAngle", "biggerAngle"}:
                 count += 0.5
