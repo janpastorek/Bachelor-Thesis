@@ -75,7 +75,7 @@ class Environment(CHSH.abstractEnvironment):
                 except ValueError:
                     gate_angle = 0
 
-                I_length = len(self.initial_state) ** (1 / self.num_players)
+                I_length = int(len(self.initial_state) ** (1 / self.num_players))
 
                 # apply action to state
                 operation = []
@@ -88,12 +88,12 @@ class Environment(CHSH.abstractEnvironment):
                     if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
                         if rotate_ancilla: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
                         else: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
-                        if self.num_players != 2: operation = np.kron(calc_operation, np.identity(I_length))
+                        if len(self.state) != 4: operation = np.kron(calc_operation, np.identity(I_length))
                         else: operation = calc_operation
                     if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
                         if rotate_ancilla: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
                         else: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
-                        if self.num_players != 2: operation = np.kron(np.identity(I_length), calc_operation)
+                        if len(self.state) != 4: operation = np.kron(np.identity(I_length), calc_operation)
                         else: operation = calc_operation
 
                 if operation != []:
@@ -101,7 +101,7 @@ class Environment(CHSH.abstractEnvironment):
                     operation = []
 
             # modify repr_state according to state
-            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()  # TODO: co tam teraz ulozit?
+            self.repr_state[g * len(self.state) :(g + 1) * len(self.state)] = self.state.copy()  # TODO: co tam teraz ulozit?
 
             result.append(self.measure_analytic())  # TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
 
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    # ALL_POSSIBLE_ACTIONS.append("cnot")
+    ALL_POSSIBLE_ACTIONS.append("cnot") # can be used only when state is bigger than 4
 
     N = 2000
     n_questions = 4
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                          [0, 1, 1, 0]]
     max_gates = 10
     round_to = 3
-    env = Environment(n_questions, evaluation_tactic, max_gates)
+    env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=np.array([ 0+0j, 0+0j, 0.707+0j, 0+0j, -0.707+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j ]))
     hidden_dim = [len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
