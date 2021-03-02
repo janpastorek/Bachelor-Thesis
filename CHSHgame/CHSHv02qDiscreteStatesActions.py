@@ -5,8 +5,8 @@ import numpy as np
 from qiskit.circuit.library import IGate, CXGate
 
 import CHSH
-from CHSH import Game, Agent
-from KerasModel import KerasModel
+from CHSH import Game
+from agents.DQNAgent import DQNAgent
 
 
 class Environment(CHSH.abstractEnvironment):
@@ -56,7 +56,6 @@ class Environment(CHSH.abstractEnvironment):
             self.velocity = 1
 
             for action in history_actions:
-
                 if action == "biggerAngle":
                     self.velocity *= 2
                     continue
@@ -98,14 +97,15 @@ class Environment(CHSH.abstractEnvironment):
                         self.state = np.matmul(np.kron(np.identity(4), np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))),
                                                self.state)
 
-            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy() # TODO: co tam teraz ulozit?
+            self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()  # TODO: co tam teraz ulozit?
 
-            result.append(self.measure_analytic())  #TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
+            result.append(self.measure_analytic())  # TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
+
+        # self.repr_state[-1] = len(self.history_actions)
         return result
 
     @CHSH.override
     def step(self, action):
-
         # Alice and Bob win when their input (a, b)
         # and their response (s, t) satisfy this relationship.
         done = False
@@ -153,14 +153,13 @@ from CHSH import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = [type + axis + str(360 * i) for i in range(1, 2) for axis in 'xyz' for type in 'ra']
-    ACTIONS = [type + axis + str(- 360 * i) for i in range(1, 2) for axis in 'y' for type in 'ra']
+    ACTIONS2 = ['r' + axis + str(360 / 4 * i) for i in range(1, 2) for axis in 'xyz']
+    ACTIONS = ['r' + axis + str(-360 / 4 * i) for i in range(1, 2) for axis in 'xyz']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in
-                            ACTIONS2]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
@@ -173,16 +172,19 @@ if __name__ == '__main__':
                          [1, 0, 0, 1],
                          [0, 1, 1, 0]]
     max_gates = 10
-    round_to = 2
-    # [ 0+0j, 0+0j, 0+0j, 0+0j, -0.707+0j, 0+0j, 0.707+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j ]
-    env = Environment(n_questions, evaluation_tactic, max_gates,
-                      initial_state=np.array([0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, 0 + 0j,
-                                     0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j]))
+    round_to = 3
+    env = Environment(n_questions, evaluation_tactic, max_gates)
+    hidden_dim = [len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = Agent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                  eps_decay=0.9995, alpha=0.1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-                  model_type=KerasModel)
+    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+    #                    model_type=LinearModel)
+
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
+                     hidden_dim=hidden_dim)
+
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
 

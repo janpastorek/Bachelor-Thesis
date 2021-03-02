@@ -90,7 +90,7 @@ class KerasModel(RegressionModel):
     @override
     def load_weights(self, _):
         # load json and create model
-        json_file = open('.training/model.json', 'r')
+        json_file = open('../.training/model.json', 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         self.dnn = model_from_json(loaded_model_json)
@@ -102,7 +102,7 @@ class KerasModel(RegressionModel):
     def save_weights(self, _):
         # serialize model to JSON
         model_json = self.dnn.to_json()
-        with open(".training/model.json", "w") as json_file:
+        with open("../.training/model.json", "w") as json_file:
             json_file.write(model_json)
         # serialize weights to HDF5
         self.dnn.save_weights(".training/model.h5")

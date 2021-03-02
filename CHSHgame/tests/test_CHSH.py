@@ -1,6 +1,6 @@
 import unittest
-from CHSHv02quantumDiscreteStatesActions import Environment
-from CHSHv05quantumGeneticOptimalization import CHSHgeneticOptimizer
+from CHSHv02qDiscreteStatesActions import Environment
+from CHSHv05qGeneticOptimalization import CHSHgeneticOptimizer
 import numpy as np
 from qiskit.extensions import RYGate
 from math import pi
@@ -174,7 +174,7 @@ class TestCHSH(unittest.TestCase):
         assert CHSH.play_deterministic(evaluation_tactic) == 0.75
 
     def testCHSHacc(self):
-        import CHSHv02quantumDiscreteStatesActions
+        import CHSHv02qDiscreteStatesActions
         naucil_sa = ['b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'biggerAngle', 'a0ry22.5', 'b1ry-22.5']
         dokopy = ['bory-135', 'a0ry45', 'b1ry-45']
 
@@ -182,7 +182,7 @@ class TestCHSH(unittest.TestCase):
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [0, 1, 1, 0]]
-        env = CHSHv02quantumDiscreteStatesActions.Environment(n_questions=4, game_type=tactic, max_gates=10)
+        env = CHSHv02qDiscreteStatesActions.Environment(n_questions=4, evaluation_tactic=tactic, max_gates=10)
         for a in dokopy:
             env.step(a)
 

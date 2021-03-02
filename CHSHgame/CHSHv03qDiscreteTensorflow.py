@@ -312,7 +312,7 @@ if __name__ == '__main__':
         num_steps=2).prefetch(3)
     iterator = iter(dataset)
 
-    ### Training Agent
+    ### Training BasicAgent
 
     # (Optional) Optimize by wrapping some of the code in a graph using TF function.
     agent.train = common.function(agent.train)
