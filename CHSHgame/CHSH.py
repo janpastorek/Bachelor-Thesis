@@ -256,8 +256,9 @@ def play_deterministic(game, which="best"):
     """ Learns to play the best classic strategy according to game """
     env = CHSHv00deterministic.Environment(game)
     best, worst = env.play_all_strategies()
-    if (which == "best"): return best
-    return worst
+    # if (which == "best"): return best
+    # return worst
+    return best, worst
 
 
 import CHSHv02qDiscreteStatesActions
@@ -327,8 +328,10 @@ def play_quantum(game, which="best"):
                 if load_acc_min < worst:
                     worst = load_acc_min
 
-    if (which == "best"): return best
-    return worst
+    # if (which == "best"): return best
+    # return worst
+
+    return best, worst
 
 
 def calc_difficulty_of_game(game):
@@ -353,6 +356,9 @@ def categorize(cutGames):
     return categories
 
 
+import db
+
+
 def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5, best_or_worst="best"):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
     categories = categorize(generate_only_interesting_games(size_of_game))
@@ -362,22 +368,30 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
         for difficulty in difficulties.keys():
             for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
                 game_type = random.choice(categories[category][difficulty])
-                classical_max = play_deterministic(game_type, best_or_worst)
-                quantum_max = play_quantum(game_type, best_or_worst)
-                if best_or_worst == "best":
-                    difference_win_rate = 0 if classical_max > quantum_max else np.round(quantum_max, 6) - np.round(classical_max, 6)
-                else:
-                    difference_win_rate = 0 if classical_max < quantum_max else np.round(classical_max, 6) - np.round(quantum_max, 6)
-                differences.append((category, difficulty, game_type, difference_win_rate))
+                classical_max, classical_min = play_deterministic(game_type, best_or_worst)
+                quantum_max, quantum_min = play_quantum(game_type, best_or_worst) # TODO: vratit
+                # quantum_max = 0
+
+                difference_max = 0 if classical_max > quantum_max else difference_max = quantum_max - classical_max
+                difference_min = 0 if classical_max < quantum_max else difference_min = quantum_min - classical_min
+                differences.append((category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
+
+    DB = db.CHSHdb()
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
-    for category, difficulty, game_type, difference_win_rate in differences:
+    for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max in differences:
         print("category: ", category)
         print("difficulty: ", difficulty)
         print("game = ")
-        for i in game_type: print(i)
-        print("difference = ", difference_win_rate)
+        game_type = list(game_type)
+        for i, row in enumerate(game_type):
+            game_type[i] = list(game_type[i])
+            print(row)
+        print("difference_max = ", difference_max)
+        print("difference_min = ", difference_min)
         print()
+
+        DB.insert(category=category, difficulty=difficulty, classic=classical_max, quantum=quantum_max, difference=difference_win_rate, game=game_type)
 
     # TODO: tu by to chcelo ukladat tie taktiky ktore uz najde, tu treba dorobit tu databazku, pozor lebo teraz uz moze chciet pouzivatel aj najhorsi CHSH
 

@@ -3,6 +3,9 @@ import psycopg2
 
 class CHSHdb:
 
+    def __init__(self):
+        pass
+
     def createDB(self):
         # establishing the connection
         conn = psycopg2.connect(
@@ -43,9 +46,12 @@ class CHSHdb:
            PLAYERS INT NOT NULL CHECK ( PLAYERS >= 2 ),
            CATEGORY FLOAT NOT NULL CHECK ( CATEGORY >= 0 AND CATEGORY <= 1),
            DIFFICULTY INT NOT NULL CHECK ( DIFFICULTY >= 0),
-           CLASSIC_VALUE FLOAT NOT NULL CHECK ( CLASSIC_VALUE >= 0 AND CLASSIC_VALUE <= 1),
-           QUANTUM_VALUE FLOAT NOT NULL CHECK ( QUANTUM_VALUE >= 0 AND QUANTUM_VALUE <= 1),
-           DIFFERENCE FLOAT NOT NULL,
+           MIN_CLASSIC_VALUE FLOAT NOT NULL CHECK ( MIN_CLASSIC_VALUE >= 0 AND MIN_CLASSIC_VALUE <= 1),
+           MIN_QUANTUM_VALUE FLOAT NOT NULL CHECK ( MIN_QUANTUM_VALUE >= 0 AND MIN_QUANTUM_VALUE <= 1),
+           MAX_CLASSIC_VALUE FLOAT NOT NULL CHECK ( MAX_CLASSIC_VALUE >= 0 AND MAX_CLASSIC_VALUE <= 1),
+           MAX_QUANTUM_VALUE FLOAT NOT NULL CHECK ( MAX_QUANTUM_VALUE >= 0 AND MAX_QUANTUM_VALUE <= 1),
+           MIN_DIFFERENCE FLOAT NOT NULL,
+           MAX_DIFFERENCE FLOAT NOT NULL,
            GAME FLOAT[] NOT NULL UNIQUE
         )'''
 
@@ -67,7 +73,7 @@ class CHSHdb:
 
         begin = '''SELECT * FROM CHSH '''
         if max_difference:
-            begin = '''SELECT DISTINCT ON (QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY) QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY,CLASSIC_VALUE, QUANTUM_VALUE, DIFFERENCE, GAME FROM CHSH '''
+            begin = '''SELECT DISTINCT ON (QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY) QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME FROM CHSH '''
 
         if difficulty == "all" and category == "all":  sql = begin
         elif difficulty == "all": sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category)
@@ -97,6 +103,7 @@ class CHSHdb:
         # Creating a cursor object using the cursor() method
         cursor = conn.cursor()
 
+        # TODO: zmenil som databazu a toto som nestihol dokoncit este
         sql = '''INSERT INTO CHSH(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, CLASSIC_VALUE, QUANTUM_VALUE, DIFFERENCE, GAME) VALUES ( ''' + str(
             questions) + "," + str(
             players) + "," + str(category) + "," + str(difficulty) + "," + str(classic) + "," + str(quantum) + "," + str(
