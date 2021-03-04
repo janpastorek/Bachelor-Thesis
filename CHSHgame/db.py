@@ -93,7 +93,8 @@ class CHSHdb:
 
         return result
 
-    def insert(self, category, difficulty, classic, quantum, difference, game, questions=2, players=2):
+    def insert(self, category, difficulty, classic_min, quantum_min, classic_max, quantum_max, difference_min, difference_max, game, questions=2,
+               players=2):
         # establishing the connection
         conn = psycopg2.connect(
             database="postgres", user='postgres', password='password', host='127.0.0.1', port='5432'
@@ -103,20 +104,38 @@ class CHSHdb:
         # Creating a cursor object using the cursor() method
         cursor = conn.cursor()
 
-        # TODO: zmenil som databazu a toto som nestihol dokoncit este
-        sql = '''INSERT INTO CHSH(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, CLASSIC_VALUE, QUANTUM_VALUE, DIFFERENCE, GAME) VALUES ( ''' + str(
+        sql = '''INSERT INTO CHSH(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME) VALUES ( ''' + str(
             questions) + "," + str(
-            players) + "," + str(category) + "," + str(difficulty) + "," + str(classic) + "," + str(quantum) + "," + str(
-            difference) + ", ARRAY[" + str(game) + '''] )
+            players) + "," + str(category) + "," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
+            classic_max) + "," + str(quantum_max) + "," + str(
+            difference_min) + "," + str(
+            difference_max) + ", ARRAY[" + str(game) + '''] )
             ON CONFLICT(GAME) DO 
-            UPDATE SET QUANTUM_VALUE = EXCLUDED.QUANTUM_VALUE
-            WHERE EXCLUDED.QUANTUM_VALUE > CHSH.QUANTUM_VALUE;
+            UPDATE SET MAX_QUANTUM_VALUE = EXCLUDED.MAX_QUANTUM_VALUE, MAX_DIFFERENCE = EXCLUDED.MAX_DIFFERENCE
+            WHERE EXCLUDED.MAX_QUANTUM_VALUE > CHSH.MAX_QUANTUM_VALUE;
             '''
 
         cursor.execute(sql)
 
         # Commit your changes in the database
         conn.commit()
+
+        sql = '''INSERT INTO CHSH(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME) VALUES ( ''' + str(
+            questions) + "," + str(
+            players) + "," + str(category) + "," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
+            classic_max) + "," + str(quantum_max) + "," + str(
+            difference_min) + "," + str(
+            difference_max) + ", ARRAY[" + str(game) + '''] )
+                    ON CONFLICT(GAME) DO 
+                    UPDATE SET MIN_QUANTUM_VALUE = EXCLUDED.MIN_QUANTUM_VALUE, MIN_DIFFERENCE = EXCLUDED.MIN_DIFFERENCE
+                    WHERE EXCLUDED.MIN_QUANTUM_VALUE < CHSH.MIN_QUANTUM_VALUE;
+                    '''
+
+        cursor.execute(sql)
+
+        # Commit your changes in the database
+        conn.commit()
+
         print("Record inserted")
 
         # Closing the connection
