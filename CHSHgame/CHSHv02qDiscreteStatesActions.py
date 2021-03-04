@@ -36,6 +36,8 @@ class Environment(CHSH.abstractEnvironment):
         #         self.a.append(x)
         #         self.b.append(y)
 
+        self.memory_state = dict()
+
         self.velocity = 1
 
     @CHSH.override
@@ -97,6 +99,10 @@ class Environment(CHSH.abstractEnvironment):
                         else: operation = calc_operation
 
                 if operation != []:
+                    try:
+                        self.state = self.memory_state[self.state.tobytes()][action] # TODO:  dorobit memoizaciu
+                    except:
+                        self.state =
                     self.state = np.matmul(operation, self.state)
                     operation = []
 

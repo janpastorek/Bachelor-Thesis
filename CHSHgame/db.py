@@ -79,7 +79,7 @@ class CHSHdb:
         elif difficulty == "all": sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category)
         else: sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category) + ''' AND DIFFICULTY = ''' + str(difficulty)
 
-        sql += '''ORDER BY QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, DIFFERENCE DESC''';
+        sql += '''ORDER BY QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MAX_DIFFERENCE DESC''';
 
         # Retrieving data
         cursor.execute(sql)
