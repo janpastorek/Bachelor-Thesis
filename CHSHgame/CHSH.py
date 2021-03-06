@@ -230,10 +230,10 @@ def game_with_rows_all_zeroes(game):
     return False
 
 
-def generate_only_interesting_games(size=4):
+def generate_only_interesting_games(size=4, n_questions=2):
     """ Generates only interesting evaluation tactics
     because some are almost duplicates and some will have no difference between classic and quantum strategies. """
-    product = list(itertools.product([0, 1], repeat=size))
+    product = list(itertools.product(list(range(n_questions)), repeat=size))
     games = list(itertools.product(product, repeat=size))
     print(len(games))
     interesting_games = dict()
@@ -278,19 +278,24 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    ALL_POSSIBLE_ACTIONS.append("a0cxnot")
-    ALL_POSSIBLE_ACTIONS.append("b0cxnot")
 
     N = 3000
     n_questions = 4
     max_gates = 9
     round_to = 2
 
-    learning_rates = [0.1, 1, 0.01]
-    gammas = [1, 0.9, 0.1]
+    # learning_rates = [0.1, 1, 0.01]
+    # gammas = [1, 0.9, 0.1]
+
+    learning_rates = [0.1]
+    gammas = [1]
     if n_qubits == 2: states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)]
-    else: states = [np.array(
-        [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])]
+    else:
+        ALL_POSSIBLE_ACTIONS.append("a0cxnot")
+        ALL_POSSIBLE_ACTIONS.append("b0cxnot")
+        states = [np.array(
+            [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j,
+             0 + 0j])]
 
     best = 0
     worst = 1
@@ -350,27 +355,52 @@ def calc_difficulty_of_game(game):
     return diff
 
 
+def to_list(tuple):
+    return [list(x) for x in tuple]
+
+
 def categorize(cutGames):
     categories = dict()
     for game in cutGames:
-        classical_max = play_deterministic(game)
-        if classical_max not in (0, 1):  # these are not interesting
+        classical_max_min = play_deterministic(game)
+        if classical_max_min not in (0, 1):  # these are not interesting
             try:
-                categories[classical_max][calc_difficulty_of_game(game)].append(game)
+                categories[classical_max_min][calc_difficulty_of_game(game)].append(to_list(game))
             except KeyError:
-                try: categories[classical_max][calc_difficulty_of_game(game)] = [game]
-                except KeyError: categories[classical_max] = {calc_difficulty_of_game(game): [game]}
+                try: categories[classical_max_min][calc_difficulty_of_game(game)] = [to_list(game)]
+                except KeyError: categories[classical_max_min] = {calc_difficulty_of_game(game): [to_list(game)]}
     return categories
 
 
 import db
 
+def Convert(list):
+    categories = dict()
+    for dict_row in list:
+        try:
+            categories[tuple(dict_row[0][0])][dict_row[1]].append(dict_row[2][0])
+        except KeyError:
+            try: categories[tuple(dict_row[0][0])][dict_row[1]] = dict_row[2][0]
+            except: categories[tuple(dict_row[0][0])] = {dict_row[1]: dict_row[2][0]}
+    return categories
 
-def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent, n_qubits=2):
+def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
+                             n_qubits=2):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
     assert n_qubits == 2 or n_qubits == 4
+    DB = db.CHSHdb()
 
-    categories = categorize(generate_only_interesting_games(size_of_game))
+    size_of_game = n_players * n_questions
+
+
+    categories = DB.query_categories_games(n_questions=n_questions, num_players=n_players)
+
+    if categories == []:
+        categories = categorize(generate_only_interesting_games(size_of_game))
+        DB.insert_categories_games(num_players=n_players, n_questions=n_questions, generated_games=categories)
+    else:
+        categories = Convert(categories)
+
 
     differences = []
     for category, difficulties in categories.items():
@@ -385,8 +415,6 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
                 difference_min = 0 if classical_min < quantum_min else quantum_min - classical_min
                 differences.append(
                     (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
-
-    DB = db.CHSHdb()
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max in differences:
@@ -415,4 +443,4 @@ if __name__ == '__main__':
 
     # print(len(generate_only_interesting_games(4)))
 
-    max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=1, best_or_worst="best", agent_type=DQNAgent, n_qubits=2)
+    max_entangled_difference(choose_n_games_from_each_category=1, best_or_worst="best", agent_type=DQNAgent, n_qubits=2)
