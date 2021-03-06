@@ -58,6 +58,7 @@ class Environment(CHSH.abstractEnvironment):
             self.velocity = 1
 
             for action in history_actions:
+
                 # get info from action
                 if action == "biggerAngle":
                     self.velocity *= 2
@@ -99,10 +100,6 @@ class Environment(CHSH.abstractEnvironment):
                         else: operation = calc_operation
 
                 if operation != []:
-                    try:
-                        self.state = self.memory_state[self.state.tobytes()][action] # TODO:  dorobit memoizaciu
-                    except:
-                        self.state =
                     self.state = np.matmul(operation, self.state)
                     operation = []
 
@@ -112,6 +109,7 @@ class Environment(CHSH.abstractEnvironment):
             result.append(self.measure_analytic())  # TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
 
         # self.repr_state[-1] = len(self.history_actions)
+        self.memory_state[tuple(history_actions)] = (result, self.repr_state)
         return result
 
     @CHSH.override
@@ -122,7 +120,10 @@ class Environment(CHSH.abstractEnvironment):
 
         # play game
         self.history_actions.append(action)
-        result = self.calculate_state(self.history_actions)
+        try:
+            result, self.repr_state = self.memory_state[tuple(self.history_actions)]
+        except KeyError:
+            result = self.calculate_state(self.history_actions)
 
         # accuracy of winning CHSH game
         before = self.accuracy

@@ -369,12 +369,13 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
             for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
                 game_type = random.choice(categories[category][difficulty])
                 classical_max, classical_min = play_deterministic(game_type, best_or_worst)
-                quantum_max, quantum_min = play_quantum(game_type, best_or_worst) # TODO: vratit
+                quantum_max, quantum_min = play_quantum(game_type, best_or_worst)
                 # quantum_max = 0
 
                 difference_max = 0 if classical_max > quantum_max else difference_max = quantum_max - classical_max
-                difference_min = 0 if classical_max < quantum_max else difference_min = quantum_min - classical_min
-                differences.append((category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
+                difference_min = 0 if classical_min < quantum_min else difference_min = quantum_min - classical_min
+                differences.append(
+                    (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
 
     DB = db.CHSHdb()
 
@@ -391,9 +392,8 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
         print("difference_min = ", difference_min)
         print()
 
-        DB.insert(category=category, difficulty=difficulty, classic=classical_max, quantum=quantum_max, difference=difference_win_rate, game=game_type)
-
-    # TODO: tu by to chcelo ukladat tie taktiky ktore uz najde, tu treba dorobit tu databazku, pozor lebo teraz uz moze chciet pouzivatel aj najhorsi CHSH
+        DB.insert(category=category, difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
+                  quantum_max=quantum_max, difference_min=difference_min, difference_max=difference_max, game=game_type)
 
 
 if __name__ == '__main__':
