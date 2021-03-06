@@ -1,7 +1,11 @@
 import psycopg2
+import psycopg2.extras
 
 
 class CHSHdb:
+
+    def __init__(self):
+        pass
 
     def createDB(self):
         # establishing the connection
@@ -23,7 +27,7 @@ class CHSHdb:
         # Closing the connection
         conn.close()
 
-    def createTable(self):
+    def createTables(self):
         # establishing the connection
         conn = psycopg2.connect(
             database="postgres", user='postgres', password='password', host='127.0.0.1', port='5432'
@@ -34,19 +38,40 @@ class CHSHdb:
         cursor = conn.cursor()
 
         # Doping EMPLOYEE table if already exists.
-        cursor.execute("DROP TABLE IF EXISTS CHSH")
+        cursor.execute("DROP TABLE IF EXISTS NON_LOCAL_GAMES_EVALUATED")
 
         # Creating table as per requirement
-        sql = '''CREATE TABLE CHSH(
+        sql = '''CREATE TABLE NON_LOCAL_GAMES_EVALUATED(
            id SERIAL PRIMARY KEY,
            QUESTIONS INT NOT NULL CHECK ( QUESTIONS >= 2 ),
            PLAYERS INT NOT NULL CHECK ( PLAYERS >= 2 ),
-           CATEGORY FLOAT NOT NULL CHECK ( CATEGORY >= 0 AND CATEGORY <= 1),
+           CATEGORY FLOAT[] NOT NULL CHECK ( 0 <= ALL(CATEGORY) AND 1 >= ALL(CATEGORY) ),
            DIFFICULTY INT NOT NULL CHECK ( DIFFICULTY >= 0),
-           CLASSIC_VALUE FLOAT NOT NULL CHECK ( CLASSIC_VALUE >= 0 AND CLASSIC_VALUE <= 1),
-           QUANTUM_VALUE FLOAT NOT NULL CHECK ( QUANTUM_VALUE >= 0 AND QUANTUM_VALUE <= 1),
-           DIFFERENCE FLOAT NOT NULL,
-           GAME FLOAT[] NOT NULL UNIQUE
+           MIN_CLASSIC_VALUE FLOAT NOT NULL CHECK ( MIN_CLASSIC_VALUE >= 0 AND MIN_CLASSIC_VALUE <= 1),
+           MIN_QUANTUM_VALUE FLOAT NOT NULL CHECK ( MIN_QUANTUM_VALUE >= 0 AND MIN_QUANTUM_VALUE <= 1),
+           MAX_CLASSIC_VALUE FLOAT NOT NULL CHECK ( MAX_CLASSIC_VALUE >= 0 AND MAX_CLASSIC_VALUE <= 1),
+           MAX_QUANTUM_VALUE FLOAT NOT NULL CHECK ( MAX_QUANTUM_VALUE >= 0 AND MAX_QUANTUM_VALUE <= 1),
+           MIN_DIFFERENCE FLOAT NOT NULL CHECK (MIN_DIFFERENCE >= 0 AND MIN_DIFFERENCE <= 1),
+           MAX_DIFFERENCE FLOAT NOT NULL CHECK (MAX_DIFFERENCE >= 0 AND MAX_DIFFERENCE <= 1),
+           GAME FLOAT[] NOT NULL,
+           unique (PLAYERS, QUESTIONS, GAME)
+        )'''
+
+        cursor.execute(sql)
+        print("Table created successfully........")
+
+        # Doping EMPLOYEE table if already exists.
+        cursor.execute("DROP TABLE IF EXISTS NON_LOCAL_GAMES_GENERATED")
+
+        # Creating table as per requirement
+        sql = '''CREATE TABLE NON_LOCAL_GAMES_GENERATED(
+                   id SERIAL PRIMARY KEY,
+                   QUESTIONS INT NOT NULL CHECK ( QUESTIONS >= 2 ),
+                   PLAYERS INT NOT NULL CHECK ( PLAYERS >= 2 ),
+                   CATEGORY FLOAT[] NOT NULL CHECK ( 0 <= ALL(CATEGORY) AND 1 >= ALL(CATEGORY) ),
+                   DIFFICULTY INT NOT NULL CHECK ( DIFFICULTY >= 0),
+                   GAME FLOAT[] NOT NULL,
+                   unique (PLAYERS, QUESTIONS, GAME)
         )'''
 
         cursor.execute(sql)
@@ -55,7 +80,7 @@ class CHSHdb:
         # Closing the connection
         conn.close()
 
-    def query(self, category="all", difficulty="all", max_difference=False):
+    def query(self, category="all", difficulty="all", difference="all", num_players=2, n_questions=2):
         # establishing the connection
         conn = psycopg2.connect(
             database="postgres", user='postgres', password='password', host='127.0.0.1', port='5432'
@@ -65,15 +90,20 @@ class CHSHdb:
         # Creating a cursor object using the cursor() method
         cursor = conn.cursor()
 
-        begin = '''SELECT * FROM CHSH '''
-        if max_difference:
-            begin = '''SELECT DISTINCT ON (QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY) QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY,CLASSIC_VALUE, QUANTUM_VALUE, DIFFERENCE, GAME FROM CHSH '''
+        begin = '''SELECT * FROM NON_LOCAL_GAMES_EVALUATED '''
+        if difference in ["max", "min"]:
+            begin = '''SELECT DISTINCT ON (QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY) QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME FROM NON_LOCAL_GAMES_EVALUATED '''
 
         if difficulty == "all" and category == "all":  sql = begin
-        elif difficulty == "all": sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category)
-        else: sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category) + ''' AND DIFFICULTY = ''' + str(difficulty)
+        elif difficulty == "all": sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category) + ''' AND PLAYERS = ''' + str(
+            num_players) + ''' AND QUESTIONS = ''' + str(n_questions)
+        else: sql = begin + '''WHERE ''' + '''CATEGORY = ''' + str(category) + ''' AND DIFFICULTY = ''' + str(
+            difficulty) + ''' AND PLAYERS = ''' + str(num_players) + ''' AND QUESTIONS = ''' + str(n_questions)
 
-        sql += '''ORDER BY QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, DIFFERENCE DESC''';
+        if difference == "max":
+            sql += '''ORDER BY QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MAX_DIFFERENCE DESC''';
+        if difference == "min":
+            sql += '''ORDER BY QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MAX_DIFFERENCE ASC''';
 
         # Retrieving data
         cursor.execute(sql)
@@ -87,7 +117,32 @@ class CHSHdb:
 
         return result
 
-    def insert(self, category, difficulty, classic, quantum, difference, game, questions=2, players=2):
+    def query_categories_games(self, num_players=2, n_questions=2):
+        # establishing the connection
+        conn = psycopg2.connect(
+            database="postgres", user='postgres', password='password', host='127.0.0.1', port='5432'
+        )
+        conn.autocommit = True
+
+        # Creating a cursor object using the cursor() method
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+        sql = '''SELECT category,difficulty, game FROM NON_LOCAL_GAMES_GENERATED 
+        WHERE ''' + ''' PLAYERS = ''' + str(num_players) + ''' AND QUESTIONS = ''' + str(n_questions)
+
+        # Retrieving data
+        cursor.execute(sql)
+
+        result = cursor.fetchall();
+
+        print("Records queried")
+
+        # Closing the connection
+        conn.close()
+
+        return result
+
+    def insert_categories_games(self, n_questions, num_players, generated_games):
         # establishing the connection
         conn = psycopg2.connect(
             database="postgres", user='postgres', password='password', host='127.0.0.1', port='5432'
@@ -97,19 +152,62 @@ class CHSHdb:
         # Creating a cursor object using the cursor() method
         cursor = conn.cursor()
 
-        sql = '''INSERT INTO CHSH(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, CLASSIC_VALUE, QUANTUM_VALUE, DIFFERENCE, GAME) VALUES ( ''' + str(
+        for category, difficulties in generated_games.items():
+            for difficulty, games in difficulties.items():
+                for game in games:
+                    sql = "INSERT INTO NON_LOCAL_GAMES_GENERATED ( PLAYERS, QUESTIONS, DIFFICULTY, CATEGORY, GAME) VALUES (" + str(
+                        num_players) + ", " + str(n_questions) + ", " + str(difficulty) + ", ARRAY[" + str(list(category)) + "], ARRAY[" + str(game) + "]);" \
+                                                                                                                                             ""
+                    cursor.execute(sql)
+
+                    # Commit your changes in the database
+                    conn.commit()
+
+        print("Records inserted")
+
+    def insert(self, category, difficulty, classic_min, quantum_min, classic_max, quantum_max, difference_min, difference_max, game, questions=2,
+               players=2):
+        # establishing the connection
+        conn = psycopg2.connect(
+            database="postgres", user='postgres', password='password', host='127.0.0.1', port='5432'
+        )
+        conn.autocommit = True
+
+        # Creating a cursor object using the cursor() method
+        cursor = conn.cursor()
+
+        sql = '''INSERT INTO NON_LOCAL_GAMES_EVALUATED(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME) VALUES ( ''' + str(
             questions) + "," + str(
-            players) + "," + str(category) + "," + str(difficulty) + "," + str(classic) + "," + str(quantum) + "," + str(
-            difference) + ", ARRAY[" + str(game) + '''] )
-            ON CONFLICT(GAME) DO 
-            UPDATE SET QUANTUM_VALUE = EXCLUDED.QUANTUM_VALUE
-            WHERE EXCLUDED.QUANTUM_VALUE > CHSH.QUANTUM_VALUE;
+            players) + ", ARRAY[" + str(category) + "]," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
+            classic_max) + "," + str(quantum_max) + "," + str(
+            difference_min) + "," + str(
+            difference_max) + ", ARRAY[" + str(game) + '''] )
+            ON CONFLICT(PLAYERS, QUESTIONS, GAME) DO 
+            UPDATE SET MAX_QUANTUM_VALUE = EXCLUDED.MAX_QUANTUM_VALUE, MAX_DIFFERENCE = EXCLUDED.MAX_DIFFERENCE
+            WHERE EXCLUDED.MAX_QUANTUM_VALUE > NON_LOCAL_GAMES_EVALUATED.MAX_QUANTUM_VALUE;
             '''
 
         cursor.execute(sql)
 
         # Commit your changes in the database
         conn.commit()
+
+        sql = '''INSERT INTO NON_LOCAL_GAMES_EVALUATED(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME) VALUES ( ''' + str(
+            questions) + "," + str(
+            players) + ", ARRAY[" + str(category) + "]," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
+            classic_max) + "," + str(quantum_max) + "," + str(
+            difference_min) + "," + str(
+            difference_max) + ", ARRAY[" + str(game) + '''] )
+            ON CONFLICT(PLAYERS, QUESTIONS, GAME) DO 
+            UPDATE SET MIN_QUANTUM_VALUE = EXCLUDED.MIN_QUANTUM_VALUE, MIN_DIFFERENCE = EXCLUDED.MIN_DIFFERENCE
+            WHERE EXCLUDED.MIN_QUANTUM_VALUE < NON_LOCAL_GAMES_EVALUATED.MIN_QUANTUM_VALUE;
+            '''
+
+        cursor.execute(sql)
+
+        # Commit your changes in the database
+        conn.commit()
+
         print("Record inserted")
 
         # Closing the connection
@@ -121,8 +219,9 @@ if __name__ == '__main__':
 
     # db.createDB()
 
-    # db.createTable()
-    # db.insert(category=1, difficulty=2, difference=1, questions=2, players=2, classic=1, quantum=1, game=[[9]])
+    db.createTables()
+    # db.insert(category=1, difficulty=2, difference_max=1, difference_min=1, questions=2, players=2, classic_min=1, quantum_min=1, classic_max=1,
+    #           quantum_max=1, game=[[9]])
     # db.insert(category=1, difficulty=2, difference=1, questions=2, players=2, classic=1, quantum=0.75, game=[[8]])
-    print(db.query(max_difference=True))
+    # print(db.query(max_difference=True))
     print(db.query())

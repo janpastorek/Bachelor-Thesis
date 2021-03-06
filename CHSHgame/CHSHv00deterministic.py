@@ -6,20 +6,26 @@ import CHSH
 class Environment(CHSH.abstractEnvironment):
     """ creates CHSH for classic deterministic strategies"""
 
-    def __init__(self, game_type):
-        self.a = []
-        self.b = []
-        for x in range(2):
-            for y in range(2):
-                self.a.append(x)
-                self.b.append(y)
+    def __init__(self, game_type, num_players=2, n_questions=2):
+        self.num_players = num_players
+        self.n_questions = n_questions
+        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
+        # self.a = []
+        # self.b = []
+        # for x in range(2):
+        #     for y in range(2):
+        #         self.a.append(x)
+        #         self.b.append(y)
 
         self.game_type = game_type
+
         self.possible_answers = dict()
         self.possible_answers[0] = (0, 1)
         self.possible_answers[1] = (0, 1)
+
         self.responses = list(
-            itertools.product([0, 1], repeat=2))  # TODO: ak bude treba robit viac otazok a viac hracov, tak toto bude treba zmenit na skalovanie
+            itertools.product(list(range(n_questions)),
+                              repeat=self.num_players))  # TODO: je to spravne?
 
     @CHSH.override
     def reset(self):
@@ -47,7 +53,6 @@ class Environment(CHSH.abstractEnvironment):
 
     def play_all_strategies(self):
         """ plays 16 different strategies,evaluate each and :returns: the best accuracy from all strategies """
-        # TODO: Now it plays only 4 ? I miss some loop
         accuracies = []
         result = []
         # for a in range(len(self.possible_answers)):
@@ -57,11 +62,12 @@ class Environment(CHSH.abstractEnvironment):
         #             result.append(self.evaluate(question, (a, b)))
         #         accuracies.append(self.calc_accuracy(result))
         #         result = []
+
+        # TODO: toto treba checknut ci je to ok ?! 
         for r_A in self.responses:
             for r_B in self.responses:
-                for q in range(len(self.game_type)):
-                    question = [self.a[q], self.b[q]]
-                    response_to_this_question = r_A[self.a[q]], r_B[self.b[q]]
+                for x, question in enumerate(self.questions):
+                    response_to_this_question = r_A[question[0]], r_B[question[1]]
                     result.append(self.evaluate(question, response_to_this_question))
                 accuracies.append(self.calc_accuracy(result))
                 result = []
@@ -70,7 +76,7 @@ class Environment(CHSH.abstractEnvironment):
         #     question = [self.a[q], self.b[q]]
         #     for a in self.possible_answers[question[0]]:
         #         self.possible_answers[question[0]] = a
-        #         for b in self.possible_answers[question[1]]:  # TODO popnem z moznosti tu 1
+        #         for b in self.possible_answers[question[1]]:
         #             self.possible_answers[question[1]] = b
         #             result.append(self.evaluate(question, (a, b)))
         #
