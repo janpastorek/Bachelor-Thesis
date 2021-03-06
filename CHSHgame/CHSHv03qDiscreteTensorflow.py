@@ -79,7 +79,7 @@ class Environment(py_environment.PyEnvironment):
         weights = [abs(a) ** 2 for a in self.state]
         return weights
 
-    # Calculates winning accuracy / win rate based on winning evaluation_tactic
+    # Calculates winning accuracy / win rate based on winning game_type
     def calc_accuracy(self, result):
         win_rate = 0
         for x, riadok in enumerate(self.tactic):
@@ -312,7 +312,7 @@ if __name__ == '__main__':
         num_steps=2).prefetch(3)
     iterator = iter(dataset)
 
-    ### Training Agent
+    ### Training BasicAgent
 
     # (Optional) Optimize by wrapping some of the code in a graph using TF function.
     agent.train = common.function(agent.train)
