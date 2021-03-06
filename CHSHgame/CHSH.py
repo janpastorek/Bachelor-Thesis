@@ -380,8 +380,8 @@ def Convert(list):
         try:
             categories[tuple(dict_row[0][0])][dict_row[1]].append(dict_row[2][0])
         except KeyError:
-            try: categories[tuple(dict_row[0][0])][dict_row[1]] = dict_row[2][0]
-            except: categories[tuple(dict_row[0][0])] = {dict_row[1]: dict_row[2][0]}
+            try: categories[tuple(dict_row[0][0])][dict_row[1]] = [dict_row[2][0]]
+            except: categories[tuple(dict_row[0][0])] = {dict_row[1]: [dict_row[2][0]]}
     return categories
 
 def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
@@ -415,6 +415,8 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
                 difference_min = 0 if classical_min < quantum_min else quantum_min - classical_min
                 differences.append(
                     (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
+            break
+        break
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max in differences:
@@ -429,7 +431,7 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
         print("difference_min = ", difference_min)
         print()
 
-        DB.insert(category=category, difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
+        DB.insert(category=list(category), difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
                   quantum_max=quantum_max, difference_min=difference_min, difference_max=difference_max, game=game_type)
 
 

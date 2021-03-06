@@ -182,7 +182,7 @@ class CHSHdb:
             classic_max) + "," + str(quantum_max) + "," + str(
             difference_min) + "," + str(
             difference_max) + ", ARRAY[" + str(game) + '''] )
-            ON CONFLICT(NON_LOCAL_GAMES_EVALUATED) DO 
+            ON CONFLICT(PLAYERS, QUESTIONS, GAME) DO 
             UPDATE SET MAX_QUANTUM_VALUE = EXCLUDED.MAX_QUANTUM_VALUE, MAX_DIFFERENCE = EXCLUDED.MAX_DIFFERENCE
             WHERE EXCLUDED.MAX_QUANTUM_VALUE > NON_LOCAL_GAMES_EVALUATED.MAX_QUANTUM_VALUE;
             '''
@@ -194,11 +194,11 @@ class CHSHdb:
 
         sql = '''INSERT INTO NON_LOCAL_GAMES_EVALUATED(QUESTIONS, PLAYERS, CATEGORY, DIFFICULTY, MIN_CLASSIC_VALUE, MIN_QUANTUM_VALUE, MAX_CLASSIC_VALUE, MAX_QUANTUM_VALUE, MIN_DIFFERENCE, MAX_DIFFERENCE, GAME) VALUES ( ''' + str(
             questions) + "," + str(
-            players) + "," + str(category) + "," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
+            players) + ", ARRAY[" + str(category) + "]," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
             classic_max) + "," + str(quantum_max) + "," + str(
             difference_min) + "," + str(
             difference_max) + ", ARRAY[" + str(game) + '''] )
-            ON CONFLICT(NON_LOCAL_GAMES_EVALUATED) DO 
+            ON CONFLICT(PLAYERS, QUESTIONS, GAME) DO 
             UPDATE SET MIN_QUANTUM_VALUE = EXCLUDED.MIN_QUANTUM_VALUE, MIN_DIFFERENCE = EXCLUDED.MIN_DIFFERENCE
             WHERE EXCLUDED.MIN_QUANTUM_VALUE < NON_LOCAL_GAMES_EVALUATED.MIN_QUANTUM_VALUE;
             '''
