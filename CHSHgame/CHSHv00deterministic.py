@@ -6,10 +6,10 @@ import CHSH
 class Environment(CHSH.abstractEnvironment):
     """ creates CHSH for classic deterministic strategies"""
 
-    def __init__(self, game_type, num_players, n_questions):
+    def __init__(self, game_type, num_players=2, n_questions=2):
         self.num_players = num_players
         self.n_questions = n_questions
-        self.questions = list(itertools.product(list(range(self.n_questions // 2)), repeat=self.num_players))
+        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
         # self.a = []
         # self.b = []
         # for x in range(2):
@@ -66,8 +66,8 @@ class Environment(CHSH.abstractEnvironment):
         # TODO: toto treba checknut ci je to ok ?! 
         for r_A in self.responses:
             for r_B in self.responses:
-                for question in enumerate(self.questions):
-                    response_to_this_question = r_A[question]
+                for x, question in enumerate(self.questions):
+                    response_to_this_question = r_A[question[0]], r_B[question[1]]
                     result.append(self.evaluate(question, response_to_this_question))
                 accuracies.append(self.calc_accuracy(result))
                 result = []

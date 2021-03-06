@@ -1,7 +1,7 @@
 from math import sqrt
 
 import matplotlib.pyplot as plt
-from qiskit.extensions import RYGate, RZGate, RXGate, IGate
+from qiskit.extensions import RYGate, RZGate, RXGate, IGate, CXGate
 from sklearn.preprocessing import StandardScaler
 
 from agents.BasicAgent import BasicAgent
@@ -58,7 +58,7 @@ class abstractEnvironment(ABC):
         self.history_actions = []
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
         return self.repr_state
 
     @abstractmethod
@@ -102,6 +102,8 @@ class abstractEnvironment(ABC):
             return RYGate
         elif gate == "rz":
             return RZGate
+        elif gate == "cx":
+            return CXGate
         else:
             return IGate
 
@@ -264,7 +266,7 @@ def play_deterministic(game, which="best"):
 import CHSHv02qDiscreteStatesActions
 
 
-def play_quantum(game, which="best"):
+def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     """ Learns to play the best quantum strategy according to game """
     ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
     ACTIONS = ['r' + axis + str(- 180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
@@ -276,6 +278,8 @@ def play_quantum(game, which="best"):
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    ALL_POSSIBLE_ACTIONS.append("a0cxnot")
+    ALL_POSSIBLE_ACTIONS.append("b0cxnot")
 
     N = 3000
     n_questions = 4
@@ -284,10 +288,9 @@ def play_quantum(game, which="best"):
 
     learning_rates = [0.1, 1, 0.01]
     gammas = [1, 0.9, 0.1]
-    states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64),
-              np.array([1, 0, 0, 0], dtype=np.float64),
-              np.array([0, 1 / sqrt(2), 1 / sqrt(2), 0], dtype=np.float64),
-              np.array([0, 0, 1, 0], dtype=np.float64)]
+    if n_qubits == 2: states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)]
+    else: states = [np.array(
+        [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])]
 
     best = 0
     worst = 1
@@ -299,10 +302,17 @@ def play_quantum(game, which="best"):
             for gamma in gammas:
                 env.reset()
                 # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-                agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
-                                   eps_min=0.01,
-                                   eps_decay=0.9995, alpha=alpha, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-                                   model_type=LinearModel)
+                if agent_type == BasicAgent:
+                    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
+                                       eps_min=0.01,
+                                       eps_decay=0.9995, alpha=alpha, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+                                       model_type=LinearModel)
+
+                else:
+                    hidden_dim = [len(env.repr_state)]
+                    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1, eps_min=0.01,
+                                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=alpha, hidden_layers=len(hidden_dim),
+                                     hidden_dim=hidden_dim)
 
                 # scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
                 batch_size = 128
@@ -356,8 +366,10 @@ def categorize(cutGames):
 import db
 
 
-def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5, best_or_worst="best"):
+def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent, n_qubits=2):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
+    assert n_qubits == 2 or n_qubits == 4
+
     categories = categorize(generate_only_interesting_games(size_of_game))
 
     differences = []
@@ -366,11 +378,11 @@ def max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=5
             for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
                 game_type = random.choice(categories[category][difficulty])
                 classical_max, classical_min = play_deterministic(game_type, best_or_worst)
-                quantum_max, quantum_min = play_quantum(game_type, best_or_worst)
+                quantum_max, quantum_min = play_quantum(game_type, best_or_worst, agent_type=agent_type, n_qubits=n_qubits)
                 # quantum_max = 0
 
-                difference_max = 0 if classical_max > quantum_max else difference_max = quantum_max - classical_max
-                difference_min = 0 if classical_min < quantum_min else difference_min = quantum_min - classical_min
+                difference_max = 0 if classical_max > quantum_max else quantum_max - classical_max
+                difference_min = 0 if classical_min < quantum_min else quantum_min - classical_min
                 differences.append(
                     (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
 
@@ -403,4 +415,4 @@ if __name__ == '__main__':
 
     # print(len(generate_only_interesting_games(4)))
 
-    max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=1, best_or_worst="best")
+    max_entangled_difference(size_of_game=4, choose_n_games_from_each_category=1, best_or_worst="best", agent_type=DQNAgent, n_qubits=2)

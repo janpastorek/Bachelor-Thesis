@@ -126,10 +126,10 @@ class CHSHdb:
             classic_max) + "," + str(quantum_max) + "," + str(
             difference_min) + "," + str(
             difference_max) + ", ARRAY[" + str(game) + '''] )
-                    ON CONFLICT(GAME) DO 
-                    UPDATE SET MIN_QUANTUM_VALUE = EXCLUDED.MIN_QUANTUM_VALUE, MIN_DIFFERENCE = EXCLUDED.MIN_DIFFERENCE
-                    WHERE EXCLUDED.MIN_QUANTUM_VALUE < CHSH.MIN_QUANTUM_VALUE;
-                    '''
+            ON CONFLICT(GAME) DO 
+            UPDATE SET MIN_QUANTUM_VALUE = EXCLUDED.MIN_QUANTUM_VALUE, MIN_DIFFERENCE = EXCLUDED.MIN_DIFFERENCE
+            WHERE EXCLUDED.MIN_QUANTUM_VALUE < CHSH.MIN_QUANTUM_VALUE;
+            '''
 
         cursor.execute(sql)
 
