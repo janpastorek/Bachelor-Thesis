@@ -6,7 +6,9 @@ from qiskit.circuit.library import IGate, CXGate
 
 import CHSH
 from CHSH import Game
+from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
+from models.LinearModel import LinearModel
 
 
 class Environment(CHSH.abstractEnvironment):
@@ -132,13 +134,13 @@ class Environment(CHSH.abstractEnvironment):
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
-        reward = (rozdiel_acc * 10) ** 5
+        reward = rozdiel_acc ** 3
 
         # ends when it has applied max number of gates / xxr0
-        # if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
-        #     done = True
-        #     self.max_acc = self.accuracy
-        #     reward += 50 * (1 / (self.count_gates() + 1))
+        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
+            # done = True
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
@@ -146,7 +148,7 @@ class Environment(CHSH.abstractEnvironment):
             #     reward += 200 * (1 / (self.count_gates() + 1))
 
         if self.best_or_worst == "worst": reward *= (-1)
-        if done: reward -= self.count_gates() / self.accuracy
+        # if done: reward -= self.count_gates() / self.accuracy
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -176,8 +178,8 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    ALL_POSSIBLE_ACTIONS.append("a0cxnot")
-    ALL_POSSIBLE_ACTIONS.append("b0cxnot")
+    # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
+    # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
 
     N = 3000
@@ -191,17 +193,17 @@ if __name__ == '__main__':
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=state_2)
+    env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=state)
     hidden_dim = [len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-    #                    model_type=LinearModel)
+    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                       eps_decay=0.9995, alpha=1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+                       model_type=LinearModel)
 
-    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.1, hidden_layers=len(hidden_dim),
-                     hidden_dim=hidden_dim)
+    # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+    #                  eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.1, hidden_layers=len(hidden_dim),
+    #                  hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
