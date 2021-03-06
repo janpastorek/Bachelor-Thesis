@@ -13,7 +13,7 @@ class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
-                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)):
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best"):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
@@ -29,7 +29,9 @@ class Environment(CHSH.abstractEnvironment):
         # self.a = []
         # self.b = []
 
-        self.questions = list(itertools.product(list(range(self.n_questions//2)), repeat=self.num_players))
+        self.best_or_worst = best_or_worst
+
+        self.questions = list(itertools.product(list(range(self.n_questions // 2)), repeat=self.num_players))
         print(self.questions)
         # for x in range(2):
         #     for y in range(2):
@@ -43,7 +45,7 @@ class Environment(CHSH.abstractEnvironment):
     @CHSH.override
     def reset(self):
         self.velocity = 1
-        return super().reset() # + np.array([len(self.history_actions)], dtype=np.float64)
+        return super().reset()  # + np.array([len(self.history_actions)], dtype=np.float64)
 
     def calculate_state(self, history_actions):
         """ Calculates the state according to previous actions"""
@@ -58,7 +60,6 @@ class Environment(CHSH.abstractEnvironment):
             self.velocity = 1
 
             for action in history_actions:
-
                 # get info from action
                 if action == "biggerAngle":
                     self.velocity *= 2
@@ -104,7 +105,7 @@ class Environment(CHSH.abstractEnvironment):
                     operation = []
 
             # modify repr_state according to state
-            self.repr_state[g * len(self.state) :(g + 1) * len(self.state)] = self.state.copy()  # TODO: co tam teraz ulozit?
+            self.repr_state[g * len(self.state):(g + 1) * len(self.state)] = self.state.copy()  # TODO: co tam teraz ulozit?
 
             result.append(self.measure_analytic())  # TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
 
@@ -144,6 +145,7 @@ class Environment(CHSH.abstractEnvironment):
             if np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
                 reward += 200 * (1 / (self.count_gates() + 1))
 
+        if self.best_or_worst == "worst": reward *= (-1)
         if done: reward -= self.count_gates() / self.accuracy
 
         # print("acc: ", end="")
@@ -174,7 +176,7 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append("xxr0")
     ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    ALL_POSSIBLE_ACTIONS.append("cnot") # can be used only when state is bigger than 4
+    ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
 
     N = 2000
     n_questions = 4
@@ -184,7 +186,8 @@ if __name__ == '__main__':
                          [0, 1, 1, 0]]
     max_gates = 10
     round_to = 3
-    env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=np.array([ 0+0j, 0+0j, 0.707+0j, 0+0j, -0.707+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j, 0+0j ]))
+    env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=np.array(
+        [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j]))
     hidden_dim = [len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)

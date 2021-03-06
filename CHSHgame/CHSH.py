@@ -294,7 +294,7 @@ def play_quantum(game, which="best"):
 
     for state in states:
         env = CHSHv02qDiscreteStatesActions.Environment(n_questions, game, max_gates,
-                                                        initial_state=state)
+                                                        initial_state=state, best_or_worst=which)
         for alpha in learning_rates:
             for gamma in gammas:
                 env.reset()
@@ -327,9 +327,6 @@ def play_quantum(game, which="best"):
                 # take the best found quantum, not just learned value
                 if load_acc_min < worst:
                     worst = load_acc_min
-
-    # if (which == "best"): return best
-    # return worst
 
     return best, worst
 

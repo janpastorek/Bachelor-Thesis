@@ -19,9 +19,13 @@ class Environment(CHSH.abstractEnvironment):
 
         self.game_type = game_type
 
+        self.possible_answers = dict()
+        self.possible_answers[0] = (0, 1)
+        self.possible_answers[1] = (0, 1)
+
         self.responses = list(
             itertools.product(list(range(n_questions)),
-                              repeat=self.num_players))  # TODO: ak bude treba robit viac otazok a viac hracov, tak toto bude treba zmenit na skalovanie
+                              repeat=self.num_players))  # TODO: je to spravne?
 
     @CHSH.override
     def reset(self):
@@ -72,7 +76,7 @@ class Environment(CHSH.abstractEnvironment):
         #     question = [self.a[q], self.b[q]]
         #     for a in self.possible_answers[question[0]]:
         #         self.possible_answers[question[0]] = a
-        #         for b in self.possible_answers[question[1]]:  # TODO popnem z moznosti tu 1
+        #         for b in self.possible_answers[question[1]]:
         #             self.possible_answers[question[1]] = b
         #             result.append(self.evaluate(question, (a, b)))
         #
