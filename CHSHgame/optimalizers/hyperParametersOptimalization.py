@@ -9,7 +9,7 @@ from GeneticAlg import GeneticAlg
 
 class HyperParamCHSHOptimizer(GeneticAlg):
 
-    def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05, evaluation_tactic=None, CHSH=None,
+    def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05, game_type=None, CHSH=None,
                  max_gates=10, n_questions=4):
         # Initialize the population - create population of 'size' individuals,
         # each individual is a bit string of length 'word_len'.
@@ -19,7 +19,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         self.population = [self.generate_individual() for _ in range(self.population_size)]
         self.for_plot = []
 
-        self.evaluation_tactic = evaluation_tactic
+        self.game_type = game_type
         self.CHSH = CHSH
         self.max_gates = max_gates
         self.n_questions = n_questions
@@ -33,7 +33,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         MOMENTUM = [0.9, 0.85, 0.5]
         ALPHA = [1, 0.1, 0.01, 0.001]
         EPS = [1]
-        EPS_DECAY = [0.95, 0.995, 0.99, 0.9995]
+        EPS_DECAY = [0.995, 0.9995]
         EPS_MIN = [0.001, 0.025]
         N_EPISODES = [1000, 2000, 4000]
 
@@ -46,7 +46,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         # To be implemented in subclasses
         N = math.floor(x[-1])
 
-        env = self.CHSH.Environment(self.n_questions, self.evaluation_tactic, self.max_gates)
+        env = self.CHSH.Environment(self.n_questions, self.game_type, self.max_gates)
         agent = self.CHSH.BasicAgent(len(env.state), len(self.CHSH.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
                                      eps_decay=x[3], alpha=x[4], momentum=x[5])
         scaler = get_scaler(env, N)
@@ -78,7 +78,7 @@ if __name__ == "__main__":
                          [0, 1, 1, 0]]
 
     ga = HyperParamCHSHOptimizer(population_size=6, n_crossover=5, mutation_prob=0.01,
-                                 evaluation_tactic=evaluation_tactic, CHSH=Environment)
+                                 game_type=evaluation_tactic, CHSH=Environment)
     best = ga.solve(5)  # you can also play with max. generations
     ga.show_individual(best)
 

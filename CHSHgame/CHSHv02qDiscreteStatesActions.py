@@ -24,12 +24,17 @@ class Environment(CHSH.abstractEnvironment):
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
+        # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
+
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
         # input, generate "questions" in equal number
         # self.a = []
         # self.b = []
+
+        # self.max_found = xy       # TODO: ze by si vzdy pametal najvacsie aj najmensie a tie ukladal do db?!
 
         self.best_or_worst = best_or_worst
 
@@ -134,13 +139,13 @@ class Environment(CHSH.abstractEnvironment):
 
         # reward is the increase in accuracy
         rozdiel_acc = self.accuracy - before
-        reward = rozdiel_acc ** 3
+        reward = (rozdiel_acc **3) * 1000
 
         # ends when it has applied max number of gates / xxr0
-        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
-            # done = True
-            self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
+        # if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
+        #     # done = True
+        #     self.max_acc = self.accuracy
+        #     reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
@@ -182,7 +187,7 @@ if __name__ == '__main__':
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
 
-    N = 3000
+    N = 6000
     n_questions = 4
     evaluation_tactic = [[1, 0, 0, 1],
                          [1, 0, 0, 1],
@@ -194,11 +199,11 @@ if __name__ == '__main__':
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=state)
-    hidden_dim = [len(env.repr_state)]
+    hidden_dim = [len(env.repr_state), len(env.repr_state)//2]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                       eps_decay=0.9995, alpha=1, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+                       eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
                        model_type=LinearModel)
 
     # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
@@ -206,10 +211,12 @@ if __name__ == '__main__':
     #                  hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
-    batch_size = 128
+    # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.
+    # The number of epochs can be set to an integer value between one and infinity.
+    batch_size = 1
 
     # store the final value of the portfolio (end of episode)
-    game = Game(round_to=round_to)
+    game = Game(round_to=round_to, batch_size=batch_size)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information

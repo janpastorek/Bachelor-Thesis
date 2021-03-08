@@ -58,7 +58,8 @@ class abstractEnvironment(ABC):
         self.history_actions = []
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
+        # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         return self.repr_state
 
     @abstractmethod
@@ -225,7 +226,7 @@ import itertools
 def game_with_rows_all_zeroes(game):
     """ Controls whether there is not full zero row in game """
     for row in game:
-        if 1 not in row:
+        if 1 not in row or 0 not in row:
             return True
     return False
 
@@ -289,7 +290,8 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
 
     learning_rates = [0.1]
     gammas = [1]
-    if n_qubits == 2: states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)]
+    if n_qubits == 2:
+        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), np.array([1, 0, 0, 0], dtype=np.float64)]
     else:
         ALL_POSSIBLE_ACTIONS.append("a0cxnot")
         ALL_POSSIBLE_ACTIONS.append("b0cxnot")
@@ -301,7 +303,7 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     worst = 1
 
     for state in states:
-        env = CHSHv02qDiscreteStatesActions.Environment(n_questions, game, max_gates,
+        env = CHSHv02qDiscreteStatesActions.Environment(n_questions=n_questions, game_type=game, max_gates=max_gates,
                                                         initial_state=state, best_or_worst=which)
         for alpha in learning_rates:
             for gamma in gammas:
@@ -323,8 +325,8 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
                 batch_size = 128
 
                 # store the final value of the portfolio (end of episode)
-                game = Game(round_to=round_to)
-                portfolio_val = game.evaluate_train(N, agent, env)
+                game_api = Game(round_to=round_to)
+                portfolio_val = game_api.evaluate_train(N, agent, env)
 
                 # save portfolio value for each episode
                 np.save(f'.training/train.npy', portfolio_val)
@@ -374,6 +376,7 @@ def categorize(cutGames):
 
 import db
 
+
 def Convert(list):
     categories = dict()
     for dict_row in list:
@@ -384,6 +387,7 @@ def Convert(list):
             except: categories[tuple(dict_row[0][0])] = {dict_row[1]: [dict_row[2][0]]}
     return categories
 
+
 def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
                              n_qubits=2):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
@@ -392,7 +396,6 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
 
     size_of_game = n_players * n_questions
 
-
     categories = DB.query_categories_games(n_questions=n_questions, num_players=n_players)
 
     if categories == []:
@@ -400,7 +403,6 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
         DB.insert_categories_games(num_players=n_players, n_questions=n_questions, generated_games=categories)
     else:
         categories = Convert(categories)
-
 
     differences = []
     for category, difficulties in categories.items():
@@ -415,8 +417,8 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
                 difference_min = 0 if classical_min < quantum_min else quantum_min - classical_min
                 differences.append(
                     (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max))
-            break
-        break
+            # break
+        # break
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max in differences:
