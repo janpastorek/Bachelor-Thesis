@@ -20,6 +20,7 @@ class Environment(CHSH.abstractEnvironment):
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
+        self.min_gates = 0
         self.game_type = game_type
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
@@ -136,10 +137,10 @@ class Environment(CHSH.abstractEnvironment):
         # accuracy of winning CHSH game
         before = self.accuracy
         self.accuracy = self.calc_accuracy(result)
+        difference_in_accuracy = self.accuracy - before
 
-        # reward is the increase in accuracy
-        rozdiel_acc = self.accuracy - before
-        reward = (rozdiel_acc **3) * 1000
+
+        reward = self.reward_only_negative(difference_in_accuracy)
 
         # ends when it has applied max number of gates / xxr0
         # if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
@@ -165,6 +166,66 @@ class Environment(CHSH.abstractEnvironment):
             self.counter += 1
         return self.repr_state, reward, done
 
+    def reward_only_negative(self, difference):
+        return -1
+
+    def reward_only_difference(self, difference):
+        # reward is the increase in accuracy
+        return difference
+
+    def reward_qubic(self, difference):
+        return (difference **3) * 1000
+
+    def reward_complex1(self,difference):
+        reward = difference
+        if np.round(reward,5) <= np.round(0,5):
+            reward -= self.reward_only_negative()
+        else:
+            reward += difference
+
+    def reward_complex2(self, difference):
+        reward = self.reward_qubic(difference)
+        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
+            # done = True
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
+        return reward
+
+    def rewardOnlyBest(self, difference):
+        reward = difference * 100
+
+        # always award only the best (who is best changes through evolution)
+        if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
+            reward += 50 * (self.max_acc - self.accuracy)
+            self.min_gates = len(self.history_actions)
+            self.max_acc = self.accuracy
+        elif np.round(self.accuracy, 2) == np.round(self.max_acc, 2):
+            if self.min_gates > len(self.history_actions):
+                self.min_gates = len(self.history_actions)
+
+        # end when it has applied max number of gates / xxr0
+        if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.count_gates():
+                reward = 5000 * (1 / (self.count_gates() + 1)) * self.accuracy
+            elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
+                reward -= 1000 * (self.count_gates() + 1) / self.accuracy
+            else:
+                reward -= 10000 * (self.count_gates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
+        return reward
+
+
+    def reward_combined(self, difference):
+        reward = difference
+        # skonci, ak uz ma maximalny pocet bran
+        if self.accuracy >= self.max_acc:
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (self.countGates() + 1))  # alebo za count_gates len(history_actuons)
+        if self.counter == self.max_gates:
+            reward += 50 * (1 / (self.countGates() + 1))
+        return reward
+
+
+
 
 import warnings
 
@@ -189,16 +250,16 @@ if __name__ == '__main__':
 
     N = 6000
     n_questions = 4
-    evaluation_tactic = [[1, 0, 0, 1],
-                         [1, 0, 0, 1],
-                         [1, 0, 0, 1],
-                         [0, 1, 1, 0]]
+    game_type = [[1, 0, 0, 1],
+                 [1, 0, 0, 1],
+                 [1, 0, 0, 1],
+                 [0, 1, 1, 0]]
     max_gates = 10
     round_to = 3
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, evaluation_tactic, max_gates, initial_state=state)
+    env = Environment(n_questions, game_type, max_gates, initial_state=state)
     hidden_dim = [len(env.repr_state), len(env.repr_state)//2]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)

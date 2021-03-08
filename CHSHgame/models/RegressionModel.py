@@ -1,24 +1,24 @@
 from abc import ABC, abstractmethod
 
 class RegressionModel(ABC):
-    """ A linear regression models """
+    """ a linear regression models """
 
-    def predict(self, X):
-        """ Predicts output for input """
+    def predict(self, x):
+        """ predicts output for input """
         pass
 
-    def sgd(self, X, Y, learning_rate=0.01, momentum=0.9):
-        """ Makes One step of SGD """
+    def sgd(self, x, y, learning_rate=0.01, momentum=0.9):
+        """ makes one step of sgd """
         pass
 
     def load_weights(self, filepath):
-        """ Loads weights """
+        """ loads weights """
         pass
 
     def save_weights(self, filepath):
-        """ Saves weights """
+        """ saves weights """
         pass
 
     def get_losses(self):
-        """ Returns learning loss """
+        """ returns learning loss """
         pass

@@ -180,6 +180,7 @@ class Game:
         # save the weights when we are done
         if DO == 'train':
             # # save the DQN
+
             agent.save(f'.training/linear.npz')
 
             # save the scaler
@@ -237,6 +238,7 @@ def generate_only_interesting_games(size=4, n_questions=2):
     product = list(itertools.product(list(range(n_questions)), repeat=size))
     games = list(itertools.product(product, repeat=size))
     print(len(games))
+    if size != 4: return games # this function works best only for size 4, in bigger scenarios its harder to tell which game is interesting
     interesting_games = dict()
     for game in games:
         if game_with_rows_all_zeroes(game): continue  # hry, ktore maju nulove riadky su nezaujimave tiez
@@ -259,8 +261,6 @@ def play_deterministic(game, which="best"):
     """ Learns to play the best classic strategy according to game """
     env = CHSHv00deterministic.Environment(game)
     best, worst = env.play_all_strategies()
-    # if (which == "best"): return best
-    # return worst
     return best, worst
 
 
