@@ -126,6 +126,31 @@ class Environment(CHSH.abstractEnvironment):
         self.memory_state[tuple(history_actions)] = (result, self.repr_state)
         return result
 
+    def save_interesting_strategies(self):
+        if self.accuracy > self.max_acc:
+            self.max_found_state = self.repr_state.copy()
+            self.max_found_strategy = self.history_actions.copy()
+
+        elif self.accuracy == self.max_acc:
+            if len(self.history_actions) < len(self.max_found_strategy):
+                self.max_found_state = self.repr_state.copy()
+                self.max_found_strategy = self.history_actions.copy()
+
+        if self.accuracy < self.min_acc:
+            self.max_found_state = self.repr_state.copy()
+            self.max_found_strategy = self.history_actions.copy()
+
+        elif self.accuracy == self.min_acc:
+            if len(self.history_actions) < len(self.min_found_strategy):
+                self.min_found_state = self.repr_state.copy()
+                self.min_found_strategy = self.history_actions.copy()
+
+        if self.min_found_strategy == []:
+            self.min_found_strategy.append('xxr0')
+
+        if self.max_found_strategy == []:
+            self.max_found_strategy.append('xxr0')
+
     @CHSH.override
     def step(self, action):
         # Alice and Bob win when their input (a, b)
@@ -145,26 +170,9 @@ class Environment(CHSH.abstractEnvironment):
 
         difference_in_accuracy = self.accuracy - before
 
-        reward = self.reward_funcion(self, difference_in_accuracy)
+        reward = self.reward_funcion(difference_in_accuracy)
 
-        if self.accuracy > self.max_acc:
-            self.max_found_state = self.repr_state.copy()
-            self.max_found_strategy = self.history_actions.copy()
-
-        elif self.accuracy == self.max_acc:
-            if len(self.history_actions) < len(self.max_found_strategy):
-                self.max_found_state = self.repr_state.copy()
-                self.max_found_strategy = self.history_actions.copy()
-
-
-        if self.accuracy < self.min_acc:
-            self.max_found_state = self.repr_state.copy()
-            self.max_found_strategy = self.history_actions.copy()
-
-        elif self.accuracy == self.min_acc:
-            if len(self.history_actions) < len(self.min_found_strategy):
-                self.min_found_state = self.repr_state.copy()
-                self.min_found_strategy = self.history_actions.copy()
+        self.save_interesting_strategies()
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True

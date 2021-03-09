@@ -269,8 +269,8 @@ import CHSHv02qDiscreteStatesActions
 
 def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     """ Learns to play the best quantum strategy according to game """
-    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
-    ACTIONS = ['r' + axis + str(- 180 / 16 * i) for i in range(1, 3) for axis in 'xyz']
+    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'xyz']
+    ACTIONS = ['r' + axis + str(- 180 / 16 * i) for i in range(1, 9) for axis in 'xyz']
     ACTIONS2.extend(ACTIONS)
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -345,14 +345,14 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
                 # take the best found quantum, not just learned value
                 if load_acc_max > best:
                     best = load_acc_max
-                    max_strategy = env.max_found_strategy
-                    max_state = env.max_found_state
+                    max_strategy = env.max_found_strategy.copy()
+                    max_state = env.max_found_state.copy()
 
                 # take the best found quantum, not just learned value
                 if load_acc_min < worst:
                     worst = load_acc_min
-                    min_strategy = env.min_found_strategy
-                    min_state = env.min_found_state
+                    min_strategy = env.min_found_strategy.copy()
+                    min_state = env.min_found_state.copy()
 
     return best, worst, min_state, max_state, min_strategy, max_strategy
 
@@ -427,12 +427,13 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
                 difference_min = 0 if classical_min < quantum_min else quantum_min - classical_min
                 differences.append(
                     (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max,
-                     min_state, max_state, min_strategy, max_strategy))
-            # break
+                     min_state.tolist(), max_state.tolist(), min_strategy, max_strategy))
+        #     break
         # break
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max, min_state, max_state, min_strategy, max_strategy in differences:
+        print()
         print("category: ", category)
         print("difficulty: ", difficulty)
         print("game = ")
@@ -442,22 +443,27 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
             print(row)
         print("difference_max = ", difference_max)
         print("difference_min = ", difference_min)
+        print("max state = ", max_state)
+        print("min state = ", min_state)
+        print("max strategy = ", max_strategy)
+        print("min strategy = ", min_strategy)
         print()
 
         DB.insert(category=list(category), difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
                   quantum_max=quantum_max, difference_min=difference_min, difference_max=difference_max, min_state=min_state, max_state=max_state,
                   min_strategy=min_strategy, max_strategy=max_strategy, game=game_type)
 
-    if __name__ == '__main__':
-        # max_entangled_difference(size=4)
-        # game_type = [[1, 0, 0, 1],
-        #                      [1, 0, 0, 1],
-        #                      [1, 0, 0, 1],
-        #                      [0, 1, 1, 0]]
-        # print(play_deterministic(game_type))
 
-        # print(len(generate_only_interesting_games(4)))
+if __name__ == '__main__':
+    # max_entangled_difference(size=4)
+    # game_type = [[1, 0, 0, 1],
+    #                      [1, 0, 0, 1],
+    #                      [1, 0, 0, 1],
+    #                      [0, 1, 1, 0]]
+    # print(play_deterministic(game_type))
 
-        # print([name for name, val in CHSHv02qDiscreteStatesActions.Environment.__dict__.items() if callable(val)])  # dostanem mena funkcii
+    # print(len(generate_only_interesting_games(4)))
 
-        max_entangled_difference(choose_n_games_from_each_category=1, best_or_worst="best", agent_type=DQNAgent, n_qubits=2)
+    # print([name for name, val in CHSHv02qDiscreteStatesActions.Environment.__dict__.items() if callable(val)])  # dostanem mena funkcii
+
+    max_entangled_difference(choose_n_games_from_each_category=1, best_or_worst="best", agent_type=DQNAgent, n_qubits=2)

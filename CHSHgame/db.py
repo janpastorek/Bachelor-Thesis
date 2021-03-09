@@ -53,8 +53,8 @@ class CHSHdb:
            MAX_QUANTUM_VALUE FLOAT NOT NULL CHECK ( MAX_QUANTUM_VALUE >= 0 AND MAX_QUANTUM_VALUE <= 1),
            MIN_DIFFERENCE FLOAT NOT NULL CHECK (MIN_DIFFERENCE >= 0 AND MIN_DIFFERENCE <= 1),
            MAX_DIFFERENCE FLOAT NOT NULL CHECK (MAX_DIFFERENCE >= 0 AND MAX_DIFFERENCE <= 1),
-           MIN_STRATEGY FLOAT[] NOT NULL,
-           MAX_STRATEGY FLOAT[] NOT NULL,
+           MIN_STRATEGY TEXT[] NOT NULL,
+           MAX_STRATEGY TEXT[] NOT NULL,
            MIN_STATE FLOAT[] NOT NULL,
            MAX_STATE FLOAT[] NOT NULL,
            GAME FLOAT[] NOT NULL,
@@ -187,11 +187,11 @@ class CHSHdb:
             players) + ", ARRAY[" + str(category) + "]," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
             classic_max) + "," + str(quantum_max) + "," + str(
             difference_min) + "," + str(
-            difference_max) + "," + str(
-            min_state) + "," + str(
-            max_state) + "," + str(
-            min_strategy) + "," + str(
-            max_strategy) + ", ARRAY[" + str(game) + '''] )
+            difference_max) + ",ARRAY[" + str(
+            min_state) + "], ARRAY[" + str(
+            max_state) + "], ARRAY[" + str(
+            min_strategy) + "], ARRAY[" + str(
+            max_strategy) + "], ARRAY[" + str(game) + '''] )
             ON CONFLICT(PLAYERS, QUESTIONS, GAME) DO 
             UPDATE SET MAX_QUANTUM_VALUE = EXCLUDED.MAX_QUANTUM_VALUE, MAX_DIFFERENCE = EXCLUDED.MAX_DIFFERENCE, MAX_STATE = EXCLUDED.MAX_STATE, MAX_STRATEGY = EXCLUDED.MAX_STRATEGY
             WHERE EXCLUDED.MAX_QUANTUM_VALUE > NON_LOCAL_GAMES_EVALUATED.MAX_QUANTUM_VALUE;
@@ -207,11 +207,11 @@ class CHSHdb:
             players) + ", ARRAY[" + str(category) + "]," + str(difficulty) + "," + str(classic_min) + "," + str(quantum_min) + "," + str(
             classic_max) + "," + str(quantum_max) + "," + str(
             difference_min) + "," + str(
-            difference_max) + "," + str(
-            min_state) + "," + str(
-            max_state) + "," + str(
-            min_strategy) + "," + str(
-            max_strategy) + ", ARRAY[" + str(game) + '''] )
+            difference_max) + ",ARRAY[" + str(
+            min_state) + "], ARRAY[" + str(
+            max_state) + "], ARRAY[" + str(
+            min_strategy) + "], ARRAY[" + str(
+            max_strategy) + "], ARRAY[" + str(game) + '''] )
             ON CONFLICT(PLAYERS, QUESTIONS, GAME) DO 
             UPDATE SET MIN_QUANTUM_VALUE = EXCLUDED.MIN_QUANTUM_VALUE, MIN_DIFFERENCE = EXCLUDED.MIN_DIFFERENCE, MIN_STATE = EXCLUDED.MIN_STATE, MIN_STRATEGY = EXCLUDED.MIN_STRATEGY
             WHERE EXCLUDED.MIN_QUANTUM_VALUE < NON_LOCAL_GAMES_EVALUATED.MIN_QUANTUM_VALUE;
