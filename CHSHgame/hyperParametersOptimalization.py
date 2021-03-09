@@ -1,18 +1,16 @@
 import math
 import random
 
-import matplotlib.pyplot as plt
-
+import CHSHv02qDiscreteStatesActions
 from CHSH import get_scaler, override, Game
-from optimalizers.GeneticAlg import GeneticAlg
 from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
 from models.LinearModel import LinearModel
+from optimalizers.GeneticAlg import GeneticAlg
 
 
 class HyperParamCHSHOptimizer(GeneticAlg):
-
-
+    """ Works only for CHSHv02 because of different init parameters """
 
     def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05, game_type=None, CHSH=None,
                  max_gates=10, n_questions=4, ALL_POSSIBLE_ACTIONS=None, agent_type=BasicAgent):
@@ -44,18 +42,20 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         EPS_DECAY = [0.995, 0.9995]
         EPS_MIN = [0.001]
         N_EPISODES = [1000, 2000, 4000]
-        # HIDDEN_LAYERS = [[20,20],[20],[30,30]] # TODO: aj toto by sa dalo optimalizovat, ale zatial to necham tak
+        HIDDEN_LAYERS = [[20, 20], [20], [30, 30]]
+
+        functions = [f for name, f in CHSHv02qDiscreteStatesActions.Environment.__dict__.items() if callable(f) and "reward" in name]
 
         return [random.choice(GAMMA), random.choice(EPS), random.choice(EPS_MIN), random.choice(EPS_DECAY),
-                random.choice(MOMENTUM), random.choice(ALPHA), random.choice(N_EPISODES)]
+                random.choice(MOMENTUM), random.choice(ALPHA), random.choice(N_EPISODES), random.choice(HIDDEN_LAYERS), random.choice(functions)]
 
     @override
     def fitness(self, x):
         # Returns fitness of a given individual.
         # To be implemented in subclasses
-        N = math.floor(x[-1])
+        N = math.floor(x[-3])
 
-        env = self.CHSH(self.n_questions, self.game_type, self.max_gates)
+        env = self.CHSH(self.n_questions, self.game_type, self.max_gates, reward_function=x[-1])
 
         if self.agent_type == BasicAgent:
             agent = BasicAgent(state_size=len(env.repr_state), action_size=len(self.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
@@ -64,10 +64,10 @@ class HyperParamCHSHOptimizer(GeneticAlg):
             scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
 
         else:
-            HIDDEN_LAYERS =[20, 20]
+            HIDDEN_LAYERS = x[-2]
             agent = DQNAgent(state_size=len(env.repr_state), action_size=len(self.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
-                           eps_decay=x[3], ALL_POSSIBLE_ACTIONS=self.ALL_POSSIBLE_ACTIONS, learning_rate=x[4], hidden_layers=len(HIDDEN_LAYERS),
-                         hidden_dim=HIDDEN_LAYERS)
+                             eps_decay=x[3], ALL_POSSIBLE_ACTIONS=self.ALL_POSSIBLE_ACTIONS, learning_rate=x[4], hidden_layers=len(HIDDEN_LAYERS),
+                             hidden_dim=HIDDEN_LAYERS)
             scaler = None
 
         game = Game(scaler)
@@ -80,9 +80,9 @@ class HyperParamCHSHOptimizer(GeneticAlg):
     def number_mutation(self, x, prob):
         """ Elements of x are real numbers [0.0 .. 1.0]. Mutate (i.e. add/substract random number)
          each number in x with given probabipity."""
-        potomok = x
+        potomok = x[:-3]
         for poc in range(len(potomok)):
-            if random.random() <= prob and poc != len(potomok) - 1:
+            if random.random() <= prob:  # posledne argumenty nebudu mutovat (N_EPISODES, REWARD_FUNCTION)
                 spocitaj = list(potomok)
                 priemer = sum(spocitaj) / len(spocitaj)
                 sigma_na_druhu = 0
@@ -94,7 +94,8 @@ class HyperParamCHSHOptimizer(GeneticAlg):
 
                 if random.random() > 0.5:
                     nahodne = random.uniform(0, sigma_na_druhu)
-                    potomok[poc] -= nahodne
+                    if potomok[poc] - nahodne >= 0:
+                        potomok[poc] -= nahodne
 
                 else:
                     nahodne = random.uniform(0, sigma_na_druhu)
@@ -102,7 +103,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
 
                 potomok[poc] = abs(potomok[poc])
 
-        return potomok
+        return potomok + x[-3:]
 
     @override
     def mutation(self, x, prob):
@@ -116,8 +117,8 @@ class HyperParamCHSHOptimizer(GeneticAlg):
 
 if __name__ == "__main__":
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180  * i) for i in range(1, 2) for axis in 'xyz']
-    ACTIONS = ['r' + axis + str(-180  * i) for i in range(1, 2) for axis in 'xyz']
+    ACTIONS2 = ['r' + axis + str(180 * i) for i in range(1, 2) for axis in 'xyz']
+    ACTIONS = ['r' + axis + str(-180 * i) for i in range(1, 2) for axis in 'xyz']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -129,7 +130,6 @@ if __name__ == "__main__":
     # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
-
 
     ## Solve to find optimal individual
     from CHSHv02qDiscreteStatesActions import Environment

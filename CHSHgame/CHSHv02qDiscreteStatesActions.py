@@ -7,7 +7,6 @@ from qiskit.circuit.library import IGate, CXGate
 import CHSH
 from CHSH import Game
 from agents.BasicAgent import BasicAgent
-from agents.DQNAgent import DQNAgent
 from models.LinearModel import LinearModel
 
 
@@ -15,7 +14,7 @@ class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
-                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best"):
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best", reward_function=None):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
@@ -31,12 +30,15 @@ class Environment(CHSH.abstractEnvironment):
 
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
+        self.min_acc = self.accuracy
         # input, generate "questions" in equal number
         # self.a = []
         # self.b = []
 
-        # self.max_found = xy       # TODO: ze by si vzdy pametal najvacsie aj najmensie a tie ukladal do db?!
-
+        self.max_found_state = self.repr_state.copy()
+        self.max_found_strategy = []
+        self.min_found_state = self.repr_state.copy()
+        self.min_found_strategy = []
         self.best_or_worst = best_or_worst
 
         self.questions = list(itertools.product(list(range(self.n_questions // 2)), repeat=self.num_players))
@@ -49,6 +51,9 @@ class Environment(CHSH.abstractEnvironment):
         self.memory_state = dict()
 
         self.velocity = 1
+
+        self.reward_funcion = reward_function
+        if self.reward_funcion == None: self.reward_funcion = self.reward_only_difference
 
     @CHSH.override
     def reset(self):
@@ -137,24 +142,34 @@ class Environment(CHSH.abstractEnvironment):
         # accuracy of winning CHSH game
         before = self.accuracy
         self.accuracy = self.calc_accuracy(result)
+
         difference_in_accuracy = self.accuracy - before
 
+        reward = self.reward_funcion(self, difference_in_accuracy)
 
-        reward = self.reward_only_negative(difference_in_accuracy)
+        if self.accuracy > self.max_acc:
+            self.max_found_state = self.repr_state.copy()
+            self.max_found_strategy = self.history_actions.copy()
 
-        # ends when it has applied max number of gates / xxr0
-        # if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
-        #     # done = True
-        #     self.max_acc = self.accuracy
-        #     reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
+        elif self.accuracy == self.max_acc:
+            if len(self.history_actions) < len(self.max_found_strategy):
+                self.max_found_state = self.repr_state.copy()
+                self.max_found_strategy = self.history_actions.copy()
+
+
+        if self.accuracy < self.min_acc:
+            self.max_found_state = self.repr_state.copy()
+            self.max_found_strategy = self.history_actions.copy()
+
+        elif self.accuracy == self.min_acc:
+            if len(self.history_actions) < len(self.min_found_strategy):
+                self.min_found_state = self.repr_state.copy()
+                self.min_found_strategy = self.history_actions.copy()
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
             done = True
-            # if np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
-            #     reward += 200 * (1 / (self.count_gates() + 1))
 
         if self.best_or_worst == "worst": reward *= (-1)
-        # if done: reward -= self.count_gates() / self.accuracy
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -174,14 +189,15 @@ class Environment(CHSH.abstractEnvironment):
         return difference
 
     def reward_qubic(self, difference):
-        return (difference **3) * 1000
+        return (difference ** 3) * 1000
 
-    def reward_complex1(self,difference):
+    def reward_complex1(self, difference):
         reward = difference
-        if np.round(reward,5) <= np.round(0,5):
-            reward -= self.reward_only_negative()
+        if np.round(reward, 5) <= np.round(0, 5):
+            reward -= self.reward_only_negative(difference)
         else:
             reward += difference
+        return reward
 
     def reward_complex2(self, difference):
         reward = self.reward_qubic(difference)
@@ -213,18 +229,15 @@ class Environment(CHSH.abstractEnvironment):
                 reward -= 10000 * (self.count_gates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
         return reward
 
-
     def reward_combined(self, difference):
         reward = difference
         # skonci, ak uz ma maximalny pocet bran
         if self.accuracy >= self.max_acc:
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.countGates() + 1))  # alebo za count_gates len(history_actuons)
+            reward += 5 * (1 / (self.count_gates() + 1))  # alebo za count_gates len(history_actuons)
         if self.counter == self.max_gates:
-            reward += 50 * (1 / (self.countGates() + 1))
+            reward += 50 * (1 / (self.count_gates() + 1))
         return reward
-
-
 
 
 import warnings
@@ -260,7 +273,8 @@ if __name__ == '__main__':
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state)
-    hidden_dim = [len(env.repr_state), len(env.repr_state)//2]
+
+    hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
