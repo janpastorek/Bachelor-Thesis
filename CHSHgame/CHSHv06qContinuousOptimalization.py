@@ -5,18 +5,20 @@ import numpy as np
 import CHSH
 from CHSH import BasicAgent, Game
 from CHSHv05qGeneticOptimalization import CHSHgeneticOptimizer
+from agents.DQNAgent import DQNAgent
+from models.LinearModel import LinearModel
 
 
 class Environment(CHSH.abstractEnvironment):
 
-    def __init__(self, n_questions, evaluation_tactic, max_gates, num_players=2,
+    def __init__(self, n_questions, game_type, max_gates, num_players=2,
                  initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
                                         dtype=np.longdouble)):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
         self.max_gates = max_gates
-        self.evaluation_tactic = evaluation_tactic
+        self.game_type = game_type
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
@@ -28,7 +30,7 @@ class Environment(CHSH.abstractEnvironment):
         self.optimizer = CHSHgeneticOptimizer(population_size=15, n_crossover=len(self.history_actions) - 1,
                                               mutation_prob=0.10, state=self.initial_state.copy(),
                                               history_actions=self.history_actions.copy(),
-                                              evaluation_tactic=self.evaluation_tactic,
+                                              game_type=self.game_type,
                                               num_players=self.num_players)
         self.visited = dict()
 
@@ -36,7 +38,7 @@ class Environment(CHSH.abstractEnvironment):
     def reset(self):
         return super().reset()
 
-    def calculateNewStateAccuracy(self, action):
+    def calculate_new_state(self, action):
         self.history_actions.append(action)
         try:
             actions, accuracy, self.repr_state = self.visited[tuple(self.history_actions)]
@@ -55,9 +57,10 @@ class Environment(CHSH.abstractEnvironment):
 
         # accuracy of winning CHSH game
         # reward is the increase in accuracy
-        accuracyBefore = self.accuracy
-        self.accuracy = self.calculateNewStateAccuracy(action)
-        reward, done = self.rewardOnlyBest(accuracyBefore, done)
+        accuracy_before = self.accuracy
+        self.accuracy = self.calculate_new_state(action)
+        difference_accuracy = self.accuracy - accuracy_before
+        reward = self.reward_qubic(difference_accuracy) - 3
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -65,42 +68,14 @@ class Environment(CHSH.abstractEnvironment):
         # print("rew: ", end="")
         # print(reward)
 
+        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
+            done = True
+
         if done == True:
             print(self.visited[tuple(self.history_actions)][0])
         else:
             self.counter += 1
         return self.repr_state, reward, done
-
-    def rewardOnlyBest(self, accuracyBefore, done):
-        reward = self.accuracy - accuracyBefore
-        reward *= 100
-
-        # always award only the best (who is best changes through evolution)
-        if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
-            reward += 50 * (self.max_acc - self.accuracy)
-            self.min_gates = len(self.history_actions)
-            self.max_acc = self.accuracy
-        elif np.round(self.accuracy, 2) == np.round(self.max_acc, 2):
-            if self.min_gates > len(self.history_actions):
-                self.min_gates = len(self.history_actions)
-
-        # end when it has applied max number of gates / xxr0
-        if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
-            done = True
-            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.count_gates():
-                reward = 5000 * (1 / (self.count_gates() + 1)) * self.accuracy
-            elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
-                reward -= 1000 * (self.count_gates() + 1) / self.accuracy
-            else:
-                reward -= 10000 * (self.count_gates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
-
-        return reward, done
-
-    def rewardPositiveDifference(self, accuracyBefore, done):
-        reward = self.accuracy - accuracyBefore
-        if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
-            done = True
-        return reward, done
 
 
 import warnings
@@ -122,13 +97,20 @@ if __name__ == '__main__':
                          [1, 0, 0, 1],
                          [1, 0, 0, 1],
                          [0, 1, 1, 0]]
-    max_gates = 6
-    round_to = 2
+    max_gates = 10
+    round_to = 3
     env = Environment(n_questions, evaluation_tactic, max_gates)
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                       eps_decay=0.9995, alpha=0.5, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+                       eps_decay=0.9995, alpha=0.01, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, model_type=LinearModel)
+
+    hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
+    #
+    # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+    #                  eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
+    #                  hidden_dim=hidden_dim)
+
     # scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128
 

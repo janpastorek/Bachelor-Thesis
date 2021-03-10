@@ -15,7 +15,7 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
     @override
     def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05,
                  state=[0, float(1 / sqrt(2)), -float(1 / sqrt(2)), 0],
-                 history_actions=['a0r0', 'b0r0', 'a1r0', 'b1r0'], evaluation_tactic=[], num_players=2):
+                 history_actions=['a0r0', 'b0r0', 'a1r0', 'b1r0'], game_type=[], num_players=2):
         # Initialize the population - create population of 'size' individuals,
         # each individual is a bit string of length 'word_len'.
         super().__init__()
@@ -24,7 +24,7 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
         self.mutation_prob = mutation_prob
         self.num_players = num_players
         self.initial = state
-        self.evaluation_tactic = evaluation_tactic
+        self.game_type = game_type
 
         self.reset(history_actions, n_crossover)
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
                          [1, 0, 0, 1],
                          [0, 1, 1, 0]]
     ga = CHSHgeneticOptimizer(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
-                              evaluation_tactic=evaluation_tactic)
+                              game_type=evaluation_tactic)
     best = ga.solve(50)  # you can also play with max. generations
     ga.show_individual(best[0])
 

@@ -5,6 +5,7 @@ import numpy as np
 from qiskit.extensions import RYGate
 from CHSH import Game, BasicAgent, get_scaler
 import CHSH
+from models.LinearModel import LinearModel
 
 
 class Environment(CHSH.abstractEnvironment):
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     env = Environment(n_questions, tactic, max_gates)
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
-                       eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
+                       eps_decay=0.995, alpha=1, momentum=0.5, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, model_type=LinearModel)
     scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=roundTo)
     batch_size = 128
 

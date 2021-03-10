@@ -108,6 +108,64 @@ class abstractEnvironment(ABC):
         else:
             return IGate
 
+    def reward_only_negative(self, difference):
+        return -1
+
+    def reward_only_difference(self, difference):
+        # reward is the increase in accuracy
+        return difference
+
+    def reward_qubic(self, difference):
+        return (difference ** 3) * 1000
+
+    def reward_complex1(self, difference):
+        reward = difference
+        if np.round(reward, 5) <= np.round(0, 5):
+            reward -= self.reward_only_negative(difference)
+        else:
+            reward += difference
+        return reward
+
+    def reward_complex2(self, difference):
+        reward = self.reward_qubic(difference)
+        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
+            # done = True
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
+        return reward
+
+    def rewardOnlyBest(self, difference):
+        reward = difference * 100
+
+        # always award only the best (who is best changes through evolution)
+        if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
+            reward += 50 * (self.max_acc - self.accuracy)
+            self.min_gates = len(self.history_actions)
+            self.max_acc = self.accuracy
+        elif np.round(self.accuracy, 2) == np.round(self.max_acc, 2):
+            if self.min_gates > len(self.history_actions):
+                self.min_gates = len(self.history_actions)
+
+        # end when it has applied max number of gates / xxr0
+        if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
+            if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.count_gates():
+                reward = 5000 * (1 / (self.count_gates() + 1)) * self.accuracy
+            elif np.round(self.max_acc, 2) == np.round(self.accuracy, 2):
+                reward -= 1000 * (self.count_gates() + 1) / self.accuracy
+            else:
+                reward -= 10000 * (self.count_gates() + 1) / self.accuracy  # alebo tu dam tiez nejaky vzorcek
+        return reward
+
+    def reward_combined(self, difference):
+        reward = difference
+        # skonci, ak uz ma maximalny pocet bran
+        if self.accuracy >= self.max_acc:
+            self.max_acc = self.accuracy
+            reward += 5 * (1 / (self.count_gates() + 1))  # alebo za count_gates len(history_actuons)
+        if self.counter == self.max_gates:
+            reward += 50 * (1 / (self.count_gates() + 1))
+        return reward
+
 
 import random
 
@@ -383,9 +441,6 @@ def categorize(cutGames):
     return categories
 
 
-import db
-
-
 def Convert(list):
     categories = dict()
     for dict_row in list:
@@ -397,19 +452,22 @@ def Convert(list):
     return categories
 
 
+from database import DB
+
+
 def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
                              n_qubits=2):
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
     assert n_qubits == 2 or n_qubits == 4
-    DB = db.CHSHdb()
+    db = DB.CHSHdb()
 
     size_of_game = n_players * n_questions
 
-    categories = DB.query_categories_games(n_questions=n_questions, num_players=n_players)
+    categories = db.query_categories_games(n_questions=n_questions, num_players=n_players)
 
     if categories == []:
         categories = categorize(generate_only_interesting_games(size_of_game))
-        DB.insert_categories_games(num_players=n_players, n_questions=n_questions, generated_games=categories)
+        db.insert_categories_games(num_players=n_players, n_questions=n_questions, generated_games=categories)
     else:
         categories = Convert(categories)
 
@@ -449,7 +507,7 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
         print("min strategy = ", min_strategy)
         print()
 
-        DB.insert(category=list(category), difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
+        db.insert(category=list(category), difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
                   quantum_max=quantum_max, difference_min=difference_min, difference_max=difference_max, min_state=min_state, max_state=max_state,
                   min_strategy=min_strategy, max_strategy=max_strategy, game=game_type)
 
