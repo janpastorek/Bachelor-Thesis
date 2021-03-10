@@ -100,6 +100,23 @@ class Environment(CHSH.abstractEnvironment):
 
                 # apply action to state
                 operation = []
+
+                # if q[0] == 0 and action[0:2] == 'a0':
+                #     self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
+                #                            self.state)
+                #
+                # if q[0] == 1 and action[0:2] == 'a1':
+                #     self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
+                #                            self.state)
+                #
+                # if q[0] == 0 and action[0:2] == 'b0':
+                #     self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
+                #                            self.state)
+                #
+                # if q[0] == 1 and action[0:2] == 'b1':
+                #     self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
+                #                            self.state)
+
                 if gate == CXGate:
                     if to_whom in 'a0a1':
                         operation = np.kron(CXGate(ctrl_state=1).to_matrix(), np.identity(I_length))
@@ -173,7 +190,7 @@ class Environment(CHSH.abstractEnvironment):
 
         difference_in_accuracy = self.accuracy - before
 
-        reward = self.reward_funcion(self, difference_in_accuracy)
+        reward = self.reward_funcion(self, difference_in_accuracy*100)
 
         self.save_interesting_strategies()
 
@@ -208,8 +225,8 @@ if __name__ == '__main__':
 
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
-    ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
     # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
@@ -222,10 +239,10 @@ if __name__ == '__main__':
                  [0, 1, 1, 0]]
     max_gates = 10
     round_to = 3
-    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
+    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference)
+    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined)
 
     hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
 
@@ -234,14 +251,14 @@ if __name__ == '__main__':
     #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
     #                    model_type=LinearModel)
 
-    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.1, hidden_layers=len(hidden_dim),
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.
     # The number of epochs can be set to an integer value between one and infinity.
-    batch_size = 1
+    batch_size = 32
 
     # store the final value of the portfolio (end of episode)
     game = Game(round_to=round_to, batch_size=batch_size)
@@ -261,4 +278,4 @@ if __name__ == '__main__':
     portfolio_value = game.evaluate_test(agent, env)
     print(portfolio_value)
     a = np.load(f'.training/train.npy')
-    print(f"average reward: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")
+    print(f"average accuracy: {a.mean():.2f}, min: {a.min():.2f}, max: {a.max():.2f}")

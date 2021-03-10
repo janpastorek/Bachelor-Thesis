@@ -22,7 +22,7 @@ class Environment(CHSH.abstractEnvironment):
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(n_questions)])
         self.max_acc = self.accuracy
         self.min_gates = max_gates
