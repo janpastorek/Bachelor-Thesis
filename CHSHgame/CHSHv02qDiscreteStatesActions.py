@@ -7,6 +7,10 @@ from qiskit.circuit.library import IGate, CXGate
 import CHSH
 from CHSH import Game
 from agents.BasicAgent import BasicAgent
+from agents.DQNAgent import DQNAgent
+
+import copy
+
 from models.LinearModel import LinearModel
 
 
@@ -14,7 +18,7 @@ class Environment(CHSH.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
-                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best", reward_function=None):
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128), best_or_worst="best", reward_function=None):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
@@ -26,7 +30,7 @@ class Environment(CHSH.abstractEnvironment):
         self.num_players = num_players
         # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
 
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
 
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
@@ -115,15 +119,14 @@ class Environment(CHSH.abstractEnvironment):
 
                 if operation != []:
                     self.state = np.matmul(operation, self.state)
-                    operation = []
 
             # modify repr_state according to state
-            self.repr_state[g * len(self.state):(g + 1) * len(self.state)] = self.state.copy()  # TODO: co tam teraz ulozit?
+            self.repr_state[g * len(self.state):(g + 1) * len(self.state)] = self.state.copy()
 
-            result.append(self.measure_analytic())  # TODO: ako sa bude teraz meriat win_rate? treba zistit, ci a na ktorom subarray treba zmerat
+            result.append(self.measure_analytic())
 
-        self.repr_state[-1] = len(self.history_actions)
-        self.memory_state[tuple(history_actions)] = (result, self.repr_state)
+        # self.repr_state[-1] = len(self.history_actions)
+        self.memory_state[tuple(history_actions)] = (result, self.repr_state.copy())
         return result
 
     def save_interesting_strategies(self):
@@ -197,8 +200,8 @@ from CHSH import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'xyz']
-    ACTIONS = ['r' + axis + str(-180 / 16 * i) for i in range(1, 9) for axis in 'xyz']
+    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'y']
+    ACTIONS = ['r' + axis + str(-180 / 16 * i) for i in range(1, 9) for axis in 'y']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -211,7 +214,7 @@ if __name__ == '__main__':
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
 
-    N = 6000
+    N = 2000
     n_questions = 4
     game_type = [[1, 0, 0, 1],
                  [1, 0, 0, 1],
@@ -222,18 +225,18 @@ if __name__ == '__main__':
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_qubic)
+    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference)
 
     hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                       eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-                       model_type=LinearModel)
+    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+    #                    model_type=LinearModel)
 
-    # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-    #                  eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.1, hidden_layers=len(hidden_dim),
-    #                  hidden_dim=hidden_dim)
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.1, hidden_layers=len(hidden_dim),
+                     hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.

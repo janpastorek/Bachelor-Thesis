@@ -59,7 +59,7 @@ class abstractEnvironment(ABC):
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
         return self.repr_state
 
     @abstractmethod
@@ -191,7 +191,7 @@ class Game:
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
         if self.scaler is not None: state = self.scaler.transform([state])
-        else: state = np.array([np.round(state, self.round_to)], dtype=np.float64)
+        else: state = np.around(state, self.round_to)
         done = False
 
         # be aware of the timing
@@ -202,13 +202,13 @@ class Game:
         while not done:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
-            if self.scaler is not None: next_state = self.scaler.transform([np.round(next_state, self.round_to)])
-            else: next_state = np.array([np.round(next_state, self.round_to)], dtype=np.float64)
+            if self.scaler is not None: next_state = self.scaler.transform([np.around(next_state, self.round_to)])
+            else: next_state = np.around(next_state, self.round_to)
             if DO == 'train':
                 if type(agent) == BasicAgent:
-                    agent.train(state, action[1], reward, next_state, done)
+                    agent.train(state.copy(), action[1], reward, next_state.copy(), done)
                 elif type(agent) == DQNAgent:
-                    agent.update_replay_memory(state, action[1], reward, next_state, done)
+                    agent.update_replay_memory(state.copy(), action[1], reward, next_state.copy(), done)
                     agent.replay(self.batch_size)
             state = next_state.copy()
             rew_accum += reward

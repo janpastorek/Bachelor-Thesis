@@ -1,6 +1,7 @@
 import math
 import random
 
+import CHSH
 import CHSHv02qDiscreteStatesActions
 from CHSH import get_scaler, override, Game
 from agents.BasicAgent import BasicAgent
@@ -44,7 +45,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         N_EPISODES = [1000, 2000, 4000]
         HIDDEN_LAYERS = [[20, 20], [20], [30, 30]]
 
-        functions = [f for name, f in CHSHv02qDiscreteStatesActions.Environment.__dict__.items() if callable(f) and "reward" in name]
+        functions = [f for name, f in CHSH.abstractEnvironment.__dict__.items() if callable(f) and "reward" in name]
 
         return [random.choice(GAMMA), random.choice(EPS), random.choice(EPS_MIN), random.choice(EPS_DECAY),
                 random.choice(MOMENTUM), random.choice(ALPHA), random.choice(N_EPISODES), random.choice(HIDDEN_LAYERS), random.choice(functions)]
@@ -117,16 +118,16 @@ class HyperParamCHSHOptimizer(GeneticAlg):
 
 if __name__ == "__main__":
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 * i) for i in range(1, 2) for axis in 'xyz']
-    ACTIONS = ['r' + axis + str(-180 * i) for i in range(1, 2) for axis in 'xyz']
+    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'y']
+    ACTIONS = ['r' + axis + str(-180 / 16 * i) for i in range(1, 9) for axis in 'y']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
-    ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
     # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
