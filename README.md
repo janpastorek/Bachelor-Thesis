@@ -28,6 +28,7 @@ NlgContinuousOptimalization - environment uses NlgGeneticOptimalization to optim
 I built two Reinforcement learning agents to search these environments:
 
 Basic REGRESSION agent
+
 DQN agent
 
 On top of those I built Genetic algorithm that is able to optimalize agents hyperparameters (and also choose the best reward function)
