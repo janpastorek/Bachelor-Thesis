@@ -3,12 +3,12 @@ from math import sqrt, pi
 
 import numpy as np
 from qiskit.extensions import RYGate
-from CHSH import Game, BasicAgent, get_scaler
-import CHSH
+from NonLocalGame import Game, BasicAgent, get_scaler
+import NonLocalGame
 from models.LinearModel import LinearModel
 
 
-class Environment(CHSH.abstractEnvironment):
+class Environment(NonLocalGame.abstractEnvironment):
 
     def __init__(self, n_questions, evaluation_tactic, max_gates):
         self.pointer = 0  # time
@@ -17,7 +17,7 @@ class Environment(CHSH.abstractEnvironment):
         self.history_actions = ['a0r0' for i in range(max_gates)]
         self.max_gates = max_gates
         self.evaluation_tactic = evaluation_tactic
-        self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.longdouble)
+        self.initial_state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
         self.state = self.initial_state.copy()
         self.accuracy = 0.25
         self.num_players = 2
@@ -31,7 +31,7 @@ class Environment(CHSH.abstractEnvironment):
                 self.a.append(x)
                 self.b.append(y)
 
-    @CHSH.override
+    @NonLocalGame.override
     def reset(self):
         self.counter = 1
         self.history_actions = ['a0r0' for i in range(self.max_gates)]
@@ -40,7 +40,7 @@ class Environment(CHSH.abstractEnvironment):
         self.repr_state = [0 for i in range(self.max_gates)]
         return self.repr_state
 
-    @CHSH.override
+    @NonLocalGame.override
     def step(self, action):
 
         # Alice and Bob win when their input (a, b)
@@ -60,7 +60,7 @@ class Environment(CHSH.abstractEnvironment):
             self.state = self.initial_state.copy()  ########## INITIAL STATE
 
             for action in self.history_actions:
-                gate = np.array([action[3:]], dtype=np.longdouble)
+                gate = np.array([action[3:]], dtype=np.float64)
 
                 if self.a[g] == 0 and action[0:2] == 'a0':
                     self.state[:4] = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),

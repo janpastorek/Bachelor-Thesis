@@ -1,9 +1,9 @@
 import itertools
 
-import CHSH
+import NonLocalGame
 
 
-class Environment(CHSH.abstractEnvironment):
+class Environment(NonLocalGame.abstractEnvironment):
     """ creates CHSH for classic deterministic strategies"""
 
     def __init__(self, game_type, num_players=2, n_questions=2):
@@ -27,11 +27,11 @@ class Environment(CHSH.abstractEnvironment):
             itertools.product(list(range(n_questions)),
                               repeat=self.num_players))  # TODO: je to spravne?
 
-    @CHSH.override
+    @NonLocalGame.override
     def reset(self):
         return
 
-    @CHSH.override
+    @NonLocalGame.override
     def step(self, action):
         return
 

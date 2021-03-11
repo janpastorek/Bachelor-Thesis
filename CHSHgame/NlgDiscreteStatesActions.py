@@ -4,8 +4,8 @@ from math import sqrt, pi
 import numpy as np
 from qiskit.circuit.library import IGate, CXGate
 
-import CHSH
-from CHSH import Game
+import NonLocalGame
+from NonLocalGame import Game
 from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
 
@@ -14,11 +14,11 @@ import copy
 from models.LinearModel import LinearModel
 
 
-class Environment(CHSH.abstractEnvironment):
+class Environment(NonLocalGame.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
-                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128), best_or_worst="best", reward_function=None):
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best", reward_function=None):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
@@ -30,7 +30,7 @@ class Environment(CHSH.abstractEnvironment):
         self.num_players = num_players
         # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
 
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
 
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
@@ -59,7 +59,7 @@ class Environment(CHSH.abstractEnvironment):
         self.reward_funcion = reward_function
         if self.reward_funcion == None: self.reward_funcion = self.reward_only_difference
 
-    @CHSH.override
+    @NonLocalGame.override
     def reset(self):
         self.velocity = 1
         return super().reset()  # + np.array([len(self.history_actions)], dtype=np.float64)
@@ -171,7 +171,7 @@ class Environment(CHSH.abstractEnvironment):
         if self.max_found_strategy == []:
             self.max_found_strategy.append('xxr0')
 
-    @CHSH.override
+    @NonLocalGame.override
     def step(self, action):
         # Alice and Bob win when their input (a, b)
         # and their response (s, t) satisfy this relationship.
@@ -213,7 +213,7 @@ class Environment(CHSH.abstractEnvironment):
 import warnings
 
 warnings.filterwarnings('ignore')
-from CHSH import show_plot_of
+from NonLocalGame import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
@@ -239,7 +239,7 @@ if __name__ == '__main__':
                  [0, 1, 1, 0]]
     max_gates = 10
     round_to = 3
-    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128)
+    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined)
@@ -247,13 +247,13 @@ if __name__ == '__main__':
     hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-    #                    model_type=LinearModel)
+    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                       eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+                       model_type=LinearModel)
 
-    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
-                     eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
-                     hidden_dim=hidden_dim)
+    # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+    #                  eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
+    #                  hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.

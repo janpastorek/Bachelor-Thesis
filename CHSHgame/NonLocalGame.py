@@ -59,7 +59,7 @@ class abstractEnvironment(ABC):
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         return self.repr_state
 
     @abstractmethod
@@ -191,7 +191,7 @@ class Game:
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
         if self.scaler is not None: state = self.scaler.transform([state])
-        else: state = np.around(state, self.round_to)
+        else: state = np.array(np.around(state, self.round_to), dtype=np.float64)
         done = False
 
         # be aware of the timing
@@ -203,7 +203,7 @@ class Game:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
             if self.scaler is not None: next_state = self.scaler.transform([np.around(next_state, self.round_to)])
-            else: next_state = np.around(next_state, self.round_to)
+            else: next_state = np.array(np.around(next_state, self.round_to), dtype=np.float64)
             if DO == 'train':
                 if type(agent) == BasicAgent:
                     agent.train(state.copy(), action[1], reward, next_state.copy(), done)
@@ -312,17 +312,17 @@ def generate_only_interesting_games(size=4, n_questions=2):
     return list(interesting_games.keys())
 
 
-import CHSHv00deterministic
+import NlgDeterministic
 
 
 def play_deterministic(game, which="best"):
     """ Learns to play the best classic strategy according to game """
-    env = CHSHv00deterministic.Environment(game)
+    env = NlgDeterministic.Environment(game)
     best, worst = env.play_all_strategies()
     return best, worst
 
 
-import CHSHv02qDiscreteStatesActions
+import NlgDiscreteStatesActions
 
 
 def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
@@ -367,9 +367,9 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     for state in states:
         for alpha in learning_rates:
             for gamma in gammas:
-                env = CHSHv02qDiscreteStatesActions.Environment(n_questions=n_questions, game_type=game, max_gates=max_gates,
-                                                                initial_state=state,
-                                                                best_or_worst=which)  # mozno optimalnejsie by to bolo keby sa to resetovalo iba
+                env = NlgDiscreteStatesActions.Environment(n_questions=n_questions, game_type=game, max_gates=max_gates,
+                                                           initial_state=state,
+                                                           best_or_worst=which)  # mozno optimalnejsie by to bolo keby sa to resetovalo iba
 
                 # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
                 if agent_type == BasicAgent:

@@ -76,12 +76,6 @@ class DQNAgent(object):
     def update_replay_memory(self, state, action, reward, next_state, done):
         self.memory.store(state, action, reward, next_state, done)
 
-    # def act(self, state):
-    #     if np.random.rand() <= self.epsilon:
-    #         return np.random.choice(self.action_size)
-    #     act_values = predict(self.model, state)
-    #     return np.argmax(act_values[0])  # returns action
-
     def act(self, state):
         """ :returns action based on neural model prediction / epsilon greedy """
 

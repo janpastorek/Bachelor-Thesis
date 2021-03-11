@@ -2,18 +2,18 @@ from math import sqrt
 
 import numpy as np
 
-import CHSH
-from CHSH import BasicAgent, Game
-from CHSHv05qGeneticOptimalization import CHSHgeneticOptimizer
+import NonLocalGame
+from NonLocalGame import BasicAgent, Game
+from NlgGeneticOptimalization import CHSHgeneticOptimizer
 from agents.DQNAgent import DQNAgent
 from models.LinearModel import LinearModel
 
 
-class Environment(CHSH.abstractEnvironment):
+class Environment(NonLocalGame.abstractEnvironment):
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
                  initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0],
-                                        dtype=np.longdouble)):
+                                        dtype=np.float64)):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
@@ -22,7 +22,7 @@ class Environment(CHSH.abstractEnvironment):
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(n_questions)])
         self.max_acc = self.accuracy
         self.min_gates = max_gates
@@ -34,7 +34,7 @@ class Environment(CHSH.abstractEnvironment):
                                               num_players=self.num_players)
         self.visited = dict()
 
-    @CHSH.override
+    @NonLocalGame.override
     def reset(self):
         return super().reset()
 
@@ -48,7 +48,7 @@ class Environment(CHSH.abstractEnvironment):
             self.visited[tuple(self.history_actions.copy())] = actions, accuracy, self.repr_state
         return accuracy
 
-    @CHSH.override
+    @NonLocalGame.override
     def step(self, action):
 
         # Alice and Bob win when their input (a, b)
@@ -119,12 +119,12 @@ if __name__ == '__main__':
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
 
     # plot relevant information
-    CHSH.show_plot_of(rewards, "reward")
+    NonLocalGame.show_plot_of(rewards, "reward")
 
     if agent.model.losses is not None:
-        CHSH.show_plot_of(agent.model.losses, "loss")
+        NonLocalGame.show_plot_of(agent.model.losses, "loss")
 
-    CHSH.show_plot_of(portfolio_value, "accuracy", [0.85, 0.75])
+    NonLocalGame.show_plot_of(portfolio_value, "accuracy", [0.85, 0.75])
 
     # save portfolio value for each episode
     np.save(f'.training/train.npy', portfolio_value)

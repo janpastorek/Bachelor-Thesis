@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from qiskit.extensions import RYGate
 
-from CHSH import abstractEnvironment, override
+from NonLocalGame import abstractEnvironment, override
 from optimalizers.GeneticAlg import GeneticAlg
 
 
@@ -41,7 +41,7 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
         """ Initializes number of crossovers and CHSH environment with :param history_actions - new previous actions"""
         self.state = self.initial.copy()
         self.n_crossover = n_crossover
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.longdouble)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
         self.history_actions = history_actions
         self.for_plot = []
         self.population = [self.generate_individual() for _ in range(self.population_size)]
@@ -66,11 +66,11 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
             # The input to alice and bob is random
             # Alice chooses her operation based on her input
             self.state = self.initial.copy()
-            self.repr_state = np.array([x for n in range(self.num_players ** 2) for x in self.state],
-                                       dtype=np.longdouble)
+            self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state],
+                                       dtype=np.float64)
 
             for action in x:
-                gate = np.array([action[3:]], dtype=np.longdouble)
+                gate = np.array([action[3:]], dtype=np.float64)
 
                 if self.a[g] == 0 and action[0:2] == 'a0':
                     self.state = np.matmul(np.kron(RYGate((gate * pi / 180).item()).to_matrix(), np.identity(2)),

@@ -1,6 +1,6 @@
 import unittest
-from CHSHv02qDiscreteStatesActions import Environment
-from CHSHv05qGeneticOptimalization import CHSHgeneticOptimizer
+from NlgDiscreteStatesActions import Environment
+from NlgGeneticOptimalization import CHSHgeneticOptimizer
 import numpy as np
 from qiskit.extensions import RYGate
 from math import pi
@@ -166,15 +166,15 @@ class TestCHSH(unittest.TestCase):
         hello = tf.constant("hello TensorFlow!")
 
     def testCHSHdeterministicStrategies(self):
-        import CHSH
+        import NonLocalGame
         evaluation_tactic = [[1, 0, 0, 1],
                              [1, 0, 0, 1],
                              [1, 0, 0, 1],
                              [0, 1, 1, 0]]
-        assert CHSH.play_deterministic(evaluation_tactic) == 0.75
+        assert NonLocalGame.play_deterministic(evaluation_tactic) == 0.75
 
     def testCHSHacc(self):
-        import CHSHv02qDiscreteStatesActions
+        import NlgDiscreteStatesActions
         naucil_sa = ['b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'biggerAngle', 'a0ry22.5', 'b1ry-22.5']
         dokopy = ['bory-135', 'a0ry45', 'b1ry-45']
 
@@ -182,7 +182,7 @@ class TestCHSH(unittest.TestCase):
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [0, 1, 1, 0]]
-        env = CHSHv02qDiscreteStatesActions.Environment(n_questions=4, evaluation_tactic=tactic, max_gates=10)
+        env = NlgDiscreteStatesActions.Environment(n_questions=4, evaluation_tactic=tactic, max_gates=10)
         for a in dokopy:
             env.step(a)
 
