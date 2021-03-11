@@ -217,48 +217,48 @@ from NonLocalGame import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'y']
-    ACTIONS = ['r' + axis + str(-180 / 16 * i) for i in range(1, 9) for axis in 'y']
+    ACTIONS2 = ['r' + axis + str(180 *2* i) for i in range(1, 3) for axis in 'y']
+    ACTIONS = ['r' + axis + str(-180 *2* i) for i in range(1, 3) for axis in 'y']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
-    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    ALL_POSSIBLE_ACTIONS.append("smallerAngle")
+    ALL_POSSIBLE_ACTIONS.append("biggerAngle")
     # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
 
-    N = 2000
+    N = 3000
     n_questions = 4
     game_type = [[1, 0, 0, 1],
                  [1, 0, 0, 1],
                  [1, 0, 0, 1],
                  [0, 1, 1, 0]]
-    max_gates = 10
-    round_to = 3
+    max_gates = 15
+    round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined)
 
-    hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
+    hidden_dim = [len(env.repr_state), len(env.repr_state), len(env.repr_state) // 2]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                       eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-                       model_type=LinearModel)
+    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
+    #                    model_type=LinearModel)
 
-    # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
-    #                  eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
-    #                  hidden_dim=hidden_dim)
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.1, eps=1, eps_min=0.01,
+                     eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
+                     hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.
     # The number of epochs can be set to an integer value between one and infinity.
-    batch_size = 32
+    batch_size = 128
 
     # store the final value of the portfolio (end of episode)
     game = Game(round_to=round_to, batch_size=batch_size)

@@ -159,11 +159,12 @@ class abstractEnvironment(ABC):
     def reward_combined(self, difference):
         reward = difference
         # skonci, ak uz ma maximalny pocet bran
-        if self.accuracy >= self.max_acc:
+        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
             self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.count_gates() + 1))  # alebo za count_gates len(history_actuons)
-        if self.counter == self.max_gates:
-            reward += 50 * (1 / (self.count_gates() + 1))
+            if self.history_actions[-1] == "xxr0":
+                reward += 40 * (1 / (self.count_gates() + 1)) * self.accuracy # alebo za count_gates len(history_actuons)
+        # if self.counter == self.max_gates:
+        #     reward += 50 * (1 / (self.count_gates() + 1))
         return reward
 
 
@@ -191,7 +192,7 @@ class Game:
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
         if self.scaler is not None: state = self.scaler.transform([state])
-        else: state = np.array(np.around(state, self.round_to), dtype=np.float64)
+        else: state = np.array([np.around(state, self.round_to)], dtype=np.float64)
         done = False
 
         # be aware of the timing
@@ -203,7 +204,7 @@ class Game:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
             if self.scaler is not None: next_state = self.scaler.transform([np.around(next_state, self.round_to)])
-            else: next_state = np.array(np.around(next_state, self.round_to), dtype=np.float64)
+            else: next_state = np.array([np.around(next_state, self.round_to)], dtype=np.float64)
             if DO == 'train':
                 if type(agent) == BasicAgent:
                     agent.train(state.copy(), action[1], reward, next_state.copy(), done)

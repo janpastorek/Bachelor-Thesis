@@ -44,7 +44,7 @@ class Environment(NonLocalGame.abstractEnvironment):
             actions, accuracy, self.repr_state = self.visited[tuple(self.history_actions)]
         except KeyError:
             self.optimizer.reset(self.history_actions.copy(), len(self.history_actions) - 1)
-            actions, accuracy, self.repr_state = self.optimizer.solve(22)
+            actions, accuracy, self.repr_state = self.optimizer.solve(17)
             self.visited[tuple(self.history_actions.copy())] = actions, accuracy, self.repr_state
         return accuracy
 
@@ -60,7 +60,7 @@ class Environment(NonLocalGame.abstractEnvironment):
         accuracy_before = self.accuracy
         self.accuracy = self.calculate_new_state(action)
         difference_accuracy = self.accuracy - accuracy_before
-        reward = self.reward_qubic(difference_accuracy) - 3
+        reward = self.reward_combined(difference_accuracy * 100)
 
         # print("acc: ", end="")
         # print(self.accuracy)
@@ -99,17 +99,17 @@ if __name__ == '__main__':
                          [0, 1, 1, 0]]
     max_gates = 10
     round_to = 3
-    env = Environment(n_questions, evaluation_tactic, max_gates)
+    env = Environment(n_questions, evaluation_tactic, max_gates, )
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-                       eps_decay=0.9995, alpha=0.01, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, model_type=LinearModel)
+    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.1, eps=1, eps_min=0.01,
+    #                    eps_decay=0.9998, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, model_type=LinearModel)
 
     hidden_dim = [len(env.repr_state), len(env.repr_state) // 2]
     #
-    # agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
-    #                  eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
-    #                  hidden_dim=hidden_dim)
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.1, eps=1, eps_min=0.01,
+                     eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
+                     hidden_dim=hidden_dim)
 
     # scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     batch_size = 128

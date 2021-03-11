@@ -2,7 +2,6 @@ import math
 import random
 
 import NonLocalGame
-import NlgDiscreteStatesActions
 from NonLocalGame import get_scaler, override, Game
 from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
@@ -36,27 +35,29 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         # Generate random individual.
         # To be implemented in subclasses
         # tieto hyperparametre treba optimalizovat
-        GAMMA = [1, 0.9, 0.5, 0]
+        GAMMA = [1, 0.9, 0.5, 0.1, 0]
         MOMENTUM = [0.9, 0.85, 0.5]
         ALPHA = [1, 0.1, 0.01, 0.001]
         EPS = [1]
-        EPS_DECAY = [0.995, 0.9995]
+        EPS_DECAY = [0.99995, 0.9995, 0.9998]
         EPS_MIN = [0.001]
-        N_EPISODES = [1000, 2000, 4000]
-        HIDDEN_LAYERS = [[20, 20], [20], [30, 30]]
+        N_EPISODES = [2000, 3000, 4000]
+        HIDDEN_LAYERS = [[20, 20], [20], [30, 30], [30, 30, 30]]
+        BATCH_SIZE = [32, 64, 128, 256]
 
         functions = [f for name, f in NonLocalGame.abstractEnvironment.__dict__.items() if callable(f) and "reward" in name]
 
         return [random.choice(GAMMA), random.choice(EPS), random.choice(EPS_MIN), random.choice(EPS_DECAY),
-                random.choice(MOMENTUM), random.choice(ALPHA), random.choice(N_EPISODES), random.choice(HIDDEN_LAYERS), random.choice(functions)]
+                random.choice(MOMENTUM), random.choice(ALPHA), random.choice(N_EPISODES), random.choice(HIDDEN_LAYERS), random.choice(functions),
+                random.choice(BATCH_SIZE)]
 
     @override
     def fitness(self, x):
         # Returns fitness of a given individual.
         # To be implemented in subclasses
-        N = math.floor(x[-3])
+        N = math.floor(x[-4])
 
-        env = self.CHSH(self.n_questions, self.game_type, self.max_gates, reward_function=x[-1])
+        env = self.CHSH(self.n_questions, self.game_type, self.max_gates, reward_function=x[-2])
 
         if self.agent_type == BasicAgent:
             agent = BasicAgent(state_size=len(env.repr_state), action_size=len(self.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
@@ -65,13 +66,13 @@ class HyperParamCHSHOptimizer(GeneticAlg):
             scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
 
         else:
-            HIDDEN_LAYERS = x[-2]
+            HIDDEN_LAYERS = x[-3]
             agent = DQNAgent(state_size=len(env.repr_state), action_size=len(self.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
                              eps_decay=x[3], ALL_POSSIBLE_ACTIONS=self.ALL_POSSIBLE_ACTIONS, learning_rate=x[4], hidden_layers=len(HIDDEN_LAYERS),
                              hidden_dim=HIDDEN_LAYERS)
             scaler = None
 
-        game = Game(scaler)
+        game = Game(scaler, batch_size=x[-1])
         game.evaluate_train(N, agent, env)
 
         fitness_individual = game.evaluate_test(agent, env)
