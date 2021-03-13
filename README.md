@@ -40,5 +40,7 @@ This application uses Open Source components. You can find the source code of th
 # Acknowledgments
 
 Project: complexPytorch https://github.com/wavefrontshaping/complexPyTorch
+
 Copyright (c) 2019 Sébastien M. P. All right reserved.
-License (MIT) https://github.com/wavefrontshaping/complexPyTorch/blob/master/LICENSE.md
+
+License (MIT) https://github.com/wavefrontshaping/complexPyTorch/blob/master/LICENSE
