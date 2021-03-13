@@ -8,6 +8,7 @@ class MLP(nn.Module):
 
         M = n_inputs
         self.layers = []
+
         for hidd_l in range(n_hidden_layers):
             layer = nn.Linear(M, hidden_dim[hidd_l])
             M = hidden_dim[hidd_l]
@@ -16,12 +17,13 @@ class MLP(nn.Module):
 
         # final layer
         self.layers.append(nn.Linear(M, n_action))
-        self.layers = nn.Sequential(*self.layers)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.layers = nn.Sequential(*self.layers).to(self.device)
 
         self.losses = None
 
     def forward(self, X):
-        return self.layers(X)
+        return self.layers(X).cuda()
 
     def save_weights(self, path):
         torch.save(self.state_dict(), path)

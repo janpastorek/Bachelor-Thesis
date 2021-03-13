@@ -217,21 +217,21 @@ from NonLocalGame import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 *2* i) for i in range(1, 3) for axis in 'y']
-    ACTIONS = ['r' + axis + str(-180 *2* i) for i in range(1, 3) for axis in 'y']
+    ACTIONS2 = ['r' + axis + str(180 *2 * i) for i in range(1, 3) for axis in 'y']
+    ACTIONS = ['r' + axis + str(-180 *2 * i) for i in range(1, 3) for axis in 'y']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
     ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
-    ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
     # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
     # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
 
-    N = 3000
+    N = 4000
     n_questions = 4
     game_type = [[1, 0, 0, 1],
                  [1, 0, 0, 1],
@@ -244,14 +244,14 @@ if __name__ == '__main__':
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined)
 
-    hidden_dim = [len(env.repr_state), len(env.repr_state), len(env.repr_state) // 2]
+    hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2 , len(env.repr_state) // 2, len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
     #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
     #                    model_type=LinearModel)
 
-    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.1, eps=1, eps_min=0.01,
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
                      eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim)
 

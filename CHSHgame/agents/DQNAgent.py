@@ -7,10 +7,10 @@ from models.MLPModel import MLP
 ### The experience replay memory ###
 class ReplayBuffer:
     def __init__(self, obs_dim, act_dim, size):
-        self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float64)
-        self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float64)
+        self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float32)
+        self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float32)
         self.acts_buf = np.zeros(size, dtype=np.uint8)
-        self.rews_buf = np.zeros(size, dtype=np.float64)
+        self.rews_buf = np.zeros(size, dtype=np.float32)
         self.done_buf = np.zeros(size, dtype=np.uint8)
         self.ptr, self.size, self.max_size = 0, 0, size
 
@@ -35,9 +35,9 @@ class ReplayBuffer:
 def predict(model, np_states):
     with torch.no_grad():
         inputs = torch.from_numpy(np_states.astype(np.float32))
-        output = model(inputs)
+        output = model(inputs.to(model.device))
         # print("output:", output)
-        return output.numpy()
+        return output.cpu().numpy()
 
 
 def train_one_step(model, criterion, optimizer, inputs, targets):
@@ -49,8 +49,8 @@ def train_one_step(model, criterion, optimizer, inputs, targets):
     optimizer.zero_grad()
 
     # Forward pass
-    outputs = model(inputs)
-    loss = criterion(outputs, targets)
+    outputs = model(inputs.to(model.device))
+    loss = criterion(outputs, targets.to(model.device))
 
     # Backward and optimize
     loss.backward()

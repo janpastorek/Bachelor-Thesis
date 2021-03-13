@@ -162,7 +162,7 @@ class abstractEnvironment(ABC):
         if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
             self.max_acc = self.accuracy
             if self.history_actions[-1] == "xxr0":
-                reward += 40 * (1 / (self.count_gates() + 1)) * self.accuracy # alebo za count_gates len(history_actuons)
+                reward += 80 * (1 / (self.count_gates() + 1)) * self.accuracy # alebo za count_gates len(history_actuons)
         # if self.counter == self.max_gates:
         #     reward += 50 * (1 / (self.count_gates() + 1))
         return reward
