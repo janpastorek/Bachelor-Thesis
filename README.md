@@ -17,8 +17,6 @@ CHSHPrototype - is just a prototype that uses fixed gates(path) to illustrate ho
 
 NlgDiscreteStatesActions - is fully functioning nonlocal game discrete environment optimized for discrete states and actions to be used on this environment.
 
-NlgDiscreteTensorflow - is right now not functioning and will probably be deleted.
-
 NlgDiscreteSortActions - always sorts actions used on the environment.
 
 NlgGeneticOptimalization - is fully functioning nonlocal game environment where Genetic algorithm optimizes input rotation gates to learn the best possible way to maximize win_accuracy and therefore CHSH value. (could be set also for complex gates)
