@@ -5,9 +5,9 @@ https://janpastorek.github.io/Bachelor-Thesis/
 
 Few words towards this project:
 
-## The first goal was to build a scalable non local game environment with databse.
+### The first goal was to build a scalable non local game environment with databse.
 
-## The second goal was to build a reinforcement learning agent that will be able to search the non local game, learn the paths to bigger winning probability (CHSH value).
+### The second goal was to build a reinforcement learning agent that will be able to search the non local game, learn the paths to bigger winning probability (CHSH value).
 
 NonLocalGame provides API for doing operations on versions of nonlocalenvironments.
 
