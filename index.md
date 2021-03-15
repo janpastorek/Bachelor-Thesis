@@ -102,19 +102,19 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 </details>
 
 ### Deadlines, Milestones
-#### * web page (do 11:30 29.10.2020) -> Done on time
+#### * web page (11:30 29.10.2020) -> Done on time
 
-#### * set milestones and deadlines (do 11:30 10.11.2020)  -> Done on time
+#### * set milestones and deadlines (11:30 10.11.2020)  -> Done on time
 
-#### * collecting sources(do 11:30 01.12.2020) -> Done on time
+#### * collecting sources(11:30 01.12.2020) -> Done on time
 
-#### * 10 pages and prototype (do 15.1.2021) -> Done on time
+#### * 10 pages and prototype (15.1.2021) -> Done on time
   
-#### * final program (do 15.3.2021)
+#### * final program (15.3.2021) -> Postponed till (31.3.2021)
 
-#### * completing main part of bachelor thesis (do 15.4.2021)
+#### * completing main part of bachelor thesis (15.4.2021)
 
-#### * final testing and submitting (do 15.5.2021)
+#### * final testing and submitting (15.5.2021)
 
 <a href="https://www.canva.com/design/DAEPEqLIsWM/ij-WJ0Wpchf-UAXgLVFSWA/view?utm_content=DAEPEqLIsWM&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton">Presentation of sources, and, plan and progress of work</a>
 
