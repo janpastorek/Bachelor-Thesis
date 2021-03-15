@@ -10,6 +10,7 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.num_players = num_players
         self.n_questions = n_questions
         self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
+
         # self.a = []
         # self.b = []
         # for x in range(2):
@@ -25,7 +26,7 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         self.responses = list(
             itertools.product(list(range(n_questions)),
-                              repeat=self.num_players))  # TODO: je to spravne?
+                              repeat=self.num_players))
 
     @NonLocalGame.override
     def reset(self):

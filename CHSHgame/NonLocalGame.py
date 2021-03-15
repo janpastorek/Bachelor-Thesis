@@ -262,7 +262,7 @@ class Game:
                     self.scaler = pickle.load(f)
 
             # make sure epsilon is not 1!
-            # no need to run multiple episodes if epsilon = 0, it's deterministic
+            # no need to run multiple episodes if epsilon = 0, it's deterministic, it outputs always what it has already learnt
             agent.epsilon = 0
 
             # load trained weights
@@ -442,7 +442,7 @@ def categorize(cutGames):
     return categories
 
 
-def Convert(list):
+def convert(list):
     categories = dict()
     for dict_row in list:
         try:
@@ -470,7 +470,7 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
         categories = categorize(generate_only_interesting_games(size_of_game))
         db.insert_categories_games(num_players=n_players, n_questions=n_questions, generated_games=categories)
     else:
-        categories = Convert(categories)
+        categories = convert(categories)
 
     differences = []
     for category, difficulties in categories.items():

@@ -56,25 +56,16 @@ class Environment(NonLocalGame.abstractEnvironment):
         done = False
 
         # accuracy of winning CHSH game
-        # reward is the increase in accuracy
         accuracy_before = self.accuracy
         self.accuracy = self.calculate_new_state(action)
         difference_accuracy = self.accuracy - accuracy_before
+
+        # reward is the increase in accuracy
         reward = self.reward_combined(difference_accuracy * 100)
 
-        # print("acc: ", end="")
-        # print(self.accuracy)
-        #
-        # print("rew: ", end="")
-        # print(reward)
-
-        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
-            done = True
-
-        if done == True:
-            print(self.visited[tuple(self.history_actions)][0])
-        else:
-            self.counter += 1
+        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0': done = True
+        if done == True: print(self.visited[tuple(self.history_actions)][0])
+        else: self.counter += 1
         return self.repr_state, reward, done
 
 
@@ -87,8 +78,7 @@ if __name__ == '__main__':
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in
-                            ACTIONS]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append("xxr0")
 
     N = 4000

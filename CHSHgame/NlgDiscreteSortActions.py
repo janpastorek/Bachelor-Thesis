@@ -9,6 +9,8 @@ from models.LinearModel import LinearModel
 
 
 class Environment(NonLocalGame.abstractEnvironment):
+    """ Creates CHSH environments for quantum strategies, discretizes states and uses discrete actions which are always sorted
+    this works only for rotations on one axis"""
 
     def __init__(self, n_questions, evaluation_tactic, max_gates):
         self.pointer = 0  # time
@@ -79,9 +81,6 @@ class Environment(NonLocalGame.abstractEnvironment):
                                                self.state[:4])
 
             result.append(self.measure_analytic())
-
-        # for i in result:
-        #     print(i)
 
         # accuracy of winning CHSH game
         before = self.accuracy

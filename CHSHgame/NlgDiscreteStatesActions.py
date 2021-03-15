@@ -35,9 +35,6 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
         self.min_acc = self.accuracy
-        # input, generate "questions" in equal number
-        # self.a = []
-        # self.b = []
 
         self.max_found_state = self.repr_state.copy()
         self.max_found_strategy = []
@@ -47,15 +44,8 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         self.questions = list(itertools.product(list(range(self.n_questions // 2)), repeat=self.num_players))
         print(self.questions)
-        # for x in range(2):
-        #     for y in range(2):
-        #         self.a.append(x)
-        #         self.b.append(y)
-
         self.memory_state = dict()
-
         self.velocity = 1
-
         self.reward_funcion = reward_function
         if self.reward_funcion == None: self.reward_funcion = self.reward_only_difference
 
@@ -165,11 +155,8 @@ class Environment(NonLocalGame.abstractEnvironment):
                 self.min_found_state = self.repr_state.copy()
                 self.min_found_strategy = self.history_actions.copy()
 
-        if self.min_found_strategy == []:
-            self.min_found_strategy.append('xxr0')
-
-        if self.max_found_strategy == []:
-            self.max_found_strategy.append('xxr0')
+        if self.min_found_strategy == []: self.min_found_strategy.append('xxr0')
+        if self.max_found_strategy == []: self.max_found_strategy.append('xxr0')
 
     @NonLocalGame.override
     def step(self, action):
@@ -179,6 +166,7 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         # play game
         self.history_actions.append(action)
+
         try:
             result, self.repr_state = self.memory_state[tuple(self.history_actions)]
         except KeyError:
@@ -190,23 +178,13 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         difference_in_accuracy = self.accuracy - before
 
-        reward = self.reward_funcion(self, difference_in_accuracy*100)
+        reward = self.reward_funcion(difference_in_accuracy * 100)
 
         self.save_interesting_strategies()
 
-        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0':
-            done = True
-
+        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0': done = True
         if self.best_or_worst == "worst": reward *= (-1)
-
-        # print("acc: ", end="")
-        # print(self.accuracy)
-        #
-        # print("rew: ", end="")
-        # print(reward)
-
-        if done == False:
-            self.counter += 1
+        if not done: self.counter += 1
         return self.repr_state, reward, done
 
 
@@ -217,8 +195,8 @@ from NonLocalGame import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 *2 * i) for i in range(1, 3) for axis in 'y']
-    ACTIONS = ['r' + axis + str(-180 *2 * i) for i in range(1, 3) for axis in 'y']
+    ACTIONS2 = ['r' + axis + str(180 * 2 * i) for i in range(1, 3) for axis in 'y']
+    ACTIONS = ['r' + axis + str(-180 * 2 * i) for i in range(1, 3) for axis in 'y']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -244,7 +222,7 @@ if __name__ == '__main__':
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined)
 
-    hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2 , len(env.repr_state) // 2, len(env.repr_state)]
+    hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 
     # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
     # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
