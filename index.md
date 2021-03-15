@@ -84,6 +84,19 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Pracoval som na kapitole NonLocal games v LaTeXe</li>
 <li> Pracoval som na kapitole Reinforcement learning v LaTeXe</li>
 </ul>
+<li> 9.3 - 16.3 </li>
+<ul>
+<li> Snazil som sa optimalizovat DQN agenta, jeho ucenia pomocou memoizacie </li>
+<li> Doplnil som nove stlpce do databazy (predtym som si tam neukladal cestu, ktoru sa naucil)</li>
+<li> Stretol som sa so skolitelom - zhodnotili sme tohtotyzdnovu pracu</li>
+<li> Refactoring nad v podstate vsetkymi triedami. </li>
+<li> Doplnil som state diagram, ktory ukazuje co robi Environemnt v jednom kroku (sluzi to nato, aby bolo vidno, ze jeden hrac je od druheho oddeleny) </li>
+<li> Podarilo sa mi rozbehat PyTorch na GPU </li>
+<li> Zacal som implementovat Complex PyTorch siet (lebo kvantovy stav moze byt aj komplexny) </li>
+<li> Odskusal som si optimalizaciu hyperparametrov pomocou genetic algoritmu </li>
+<li> Pridal som zopar dalsich testov </li>
+<li> Pracoval som na kapitole Reinforcement learning v LaTeXe</li>
+</ul>
 </ul>
 </details>
 
