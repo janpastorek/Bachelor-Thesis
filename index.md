@@ -95,6 +95,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Zacal som implementovat Complex PyTorch siet (lebo kvantovy stav moze byt aj komplexny) </li>
 <li> Odskusal som si optimalizaciu hyperparametrov pomocou genetic algoritmu </li>
 <li> Pridal som zopar dalsich testov </li>
+<li> Napisal som si viacero reward funkcii a tie tiez som zahrnul ako parameter do genetic algoritmu (aby pripadne vybral tu optimalznu z nich) </li>
 <li> Pracoval som na kapitole Reinforcement learning v LaTeXe</li>
 </ul>
 </ul>
