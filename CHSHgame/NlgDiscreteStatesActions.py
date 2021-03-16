@@ -178,7 +178,10 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         difference_in_accuracy = self.accuracy - before
 
-        reward = self.reward_funcion(difference_in_accuracy * 100)
+        try:
+            reward = self.reward_funcion(self, difference_in_accuracy * 100)
+        except:
+            reward = self.reward_funcion(difference_in_accuracy * 100)
 
         self.save_interesting_strategies()
 
@@ -195,8 +198,8 @@ from NonLocalGame import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 * 2 * i) for i in range(1, 3) for axis in 'y']
-    ACTIONS = ['r' + axis + str(-180 * 2 * i) for i in range(1, 3) for axis in 'y']
+    ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
+    ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
     ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -229,7 +232,7 @@ if __name__ == '__main__':
     #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
     #                    model_type=LinearModel)
 
-    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.0, eps=1, eps_min=0.01,
+    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
                      eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim)
 
