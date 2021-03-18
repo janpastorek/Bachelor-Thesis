@@ -21,7 +21,7 @@ There are so far five versions of non local environments.
 
 * NlgGeneticOptimalization - is fully functioning nonlocal game environment where Genetic algorithm optimizes input rotation gates to learn the best possible way to maximize win_accuracy and therefore CHSH value. (could be set also for complex gates)
 
-* NlgContinuousOptimalization - environment uses NlgGeneticOptimalization to optimize gates that the agent chose each step.
+* NlgContinuousOptimalization - environment uses NlgGeneticOptimalization to optimize gates that the agent chose each step globally.
 
 I built two Reinforcement learning agents to search these environments:
 
