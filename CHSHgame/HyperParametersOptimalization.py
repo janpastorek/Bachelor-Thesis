@@ -10,7 +10,7 @@ from optimalizers.GeneticAlg import GeneticAlg
 
 
 class HyperParamCHSHOptimizer(GeneticAlg):
-    """ Works only for CHSHv02 because of different init parameters """
+    """ Works only for DiscreteStatesActions.Environment because of different init parameters """
 
     def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05, game_type=None, CHSH=None,
                  max_gates=10, n_questions=4, ALL_POSSIBLE_ACTIONS=None, agent_type=BasicAgent):

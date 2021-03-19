@@ -57,7 +57,10 @@ def train_one_step(model, criterion, optimizer, inputs, targets):
     optimizer.step()
 
 class DQNAgent(object):
-    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, ALL_POSSIBLE_ACTIONS, learning_rate, hidden_layers, hidden_dim):
+    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, ALL_POSSIBLE_ACTIONS, learning_rate, hidden_layers, hidden_dim, onehot_to_action, action_to_onehot):
+        self.onehot_to_action = onehot_to_action
+        self.action_to_onehot = action_to_onehot
+
         self.state_size = state_size
         self.action_size = action_size
         self.memory = ReplayBuffer(state_size, action_size, size=500)

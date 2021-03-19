@@ -1,27 +1,27 @@
 import itertools
+import random
 from math import sqrt, pi
 
 import numpy as np
 from qiskit.circuit.library import IGate, CXGate
+from sklearn.preprocessing import OneHotEncoder
 
 import NonLocalGame
 from NonLocalGame import Game
-from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
-
-import copy
-
-from models.LinearModel import LinearModel
 
 
 class Environment(NonLocalGame.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
-                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best", reward_function=None):
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), best_or_worst="best", reward_function=None,
+                 anneal=False):
         self.n_questions = n_questions
         self.counter = 1
         self.history_actions = []
+        self.history_actions_anneal = []
+
         self.max_gates = max_gates
         self.min_gates = 0
         self.game_type = game_type
@@ -49,12 +49,14 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.reward_funcion = reward_function
         if self.reward_funcion == None: self.reward_funcion = self.reward_only_difference
 
+        self.use_annealing = anneal
+
     @NonLocalGame.override
     def reset(self):
         self.velocity = 1
         return super().reset()  # + np.array([len(self.history_actions)], dtype=np.float64)
 
-    def calculate_state(self, history_actions):
+    def calculate_state(self, history_actions, anneal=False):
         """ Calculates the state according to previous actions"""
         result = []
 
@@ -133,7 +135,6 @@ class Environment(NonLocalGame.abstractEnvironment):
             result.append(self.measure_analytic())
 
         # self.repr_state[-1] = len(self.history_actions)
-        self.memory_state[tuple(history_actions)] = (result, self.repr_state.copy())
         return result
 
     def save_interesting_strategies(self):
@@ -164,19 +165,28 @@ class Environment(NonLocalGame.abstractEnvironment):
         # and their response (s, t) satisfy this relationship.
         done = False
 
+        if type(action) == list: action = action[0]
         # play game
         self.history_actions.append(action)
+        self.history_actions_anneal.append(action)
 
         try:
             result, self.repr_state = self.memory_state[tuple(self.history_actions)]
         except KeyError:
-            result = self.calculate_state(self.history_actions)
+            if action not in {"xxr0", "smallerAngle", "biggerAngle", "a0cxnot", "b0cxnot"} and self.use_annealing:
+                self.history_actions_anneal[-1] = self.history_actions_anneal[-1][:4] + str(self.anneal())  # simulated annealing on the last chosen action
+
+            if self.use_annealing: result = self.calculate_state(self.history_actions_anneal)
+            else: result = self.calculate_state(self.history_actions)
+            self.memory_state[tuple(self.history_actions)] = (result, self.repr_state.copy())
 
         # accuracy of winning CHSH game
         before = self.accuracy
         self.accuracy = self.calc_accuracy(result)
 
         difference_in_accuracy = self.accuracy - before
+
+        if self.best_or_worst == "worst": difference_in_accuracy *= (-1)
 
         try:
             reward = self.reward_funcion(self, difference_in_accuracy * 100)
@@ -186,9 +196,37 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.save_interesting_strategies()
 
         if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0': done = True
-        if self.best_or_worst == "worst": reward *= (-1)
         if not done: self.counter += 1
         return self.repr_state, reward, done
+
+    def anneal(self, steps=100, t_start=2, t_end=0.001):
+        # A function that finds the maximal value of the fitness function by
+        # executing the simulated annealing algorithm.
+        # Returns a state (e.g. x) for which fitness(x) is maximal.
+        x = self.random_state()
+        t = t_start
+        for i in range(steps):
+            neighbor = np.random.choice(self.neighbors(x))
+            ΔE = self.fitness(neighbor) - self.fitness(x)
+            if ΔE > 0:  # //neighbor is better then x
+                x = neighbor
+            elif np.random.random() < np.math.e ** (ΔE / t):  # //neighbor is worse then x
+                x = neighbor
+            t = t_start * (t_end / t_start) ** (i / steps)
+        return x
+
+    def fitness(self, x):
+        last = [self.history_actions[-1][:4] + str(x)]
+        return self.calc_accuracy(self.calculate_state(self.history_actions[:-1] + last, anneal=True))
+
+    def neighbors(self, x, span=30, delta=0.1):
+        res = []
+        if x > -span + 3 * delta: res += [x - i * delta for i in range(1, 4)]
+        if x < span - 3 * delta: res += [x + i * delta for i in range(1, 4)]
+        return res
+
+    def random_state(self):
+        return random.uniform(-180, 180)
 
 
 import warnings
@@ -198,14 +236,16 @@ from NonLocalGame import show_plot_of
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
-    ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
-    ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+    # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
+    # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
+    ACTIONS2 = ['r' + axis + "0" for axis in 'y']
+    # ACTIONS = ['r' + axis + "0" for axis in 'y']
+    # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
-    ALL_POSSIBLE_ACTIONS.append("xxr0")
+    ALL_POSSIBLE_ACTIONS = [[p + q + a] for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS.append(["xxr0"])
     # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
     # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
@@ -218,12 +258,12 @@ if __name__ == '__main__':
                  [1, 0, 0, 1],
                  [1, 0, 0, 1],
                  [0, 1, 1, 0]]
-    max_gates = 15
+    max_gates = 10
     round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined)
+    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined, anneal=True)
 
     hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 
@@ -232,9 +272,21 @@ if __name__ == '__main__':
     #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
     #                    model_type=LinearModel)
 
+    # define one hot encoding
+    encoder = OneHotEncoder(drop='first', sparse=False)
+    # transform data
+    onehot = encoder.fit_transform(ALL_POSSIBLE_ACTIONS)
+
+    onehot_to_action = dict()
+    action_to_onehot = dict()
+    for x, a_encoded in enumerate(onehot):
+        onehot_to_action[str(a_encoded)] = x
+        action_to_onehot[x] = str(a_encoded)
+
     agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+                     # TODO: state_size * 2 pri complexnych, ktore tam rozoberiem
                      eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
-                     hidden_dim=hidden_dim)
+                     hidden_dim=hidden_dim, onehot_to_action=onehot_to_action, action_to_onehot=action_to_onehot)
 
     # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
     # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.
