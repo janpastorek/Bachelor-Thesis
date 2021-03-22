@@ -59,7 +59,7 @@ class abstractEnvironment(ABC):
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.float64)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
         return self.repr_state
 
     @abstractmethod
@@ -166,6 +166,9 @@ class abstractEnvironment(ABC):
         # if self.counter == self.max_gates:
         #     reward += 50 * (1 / (self.count_gates() + 1))
         return reward
+
+    def complex_array_to_real(self, inp_array):
+        return np.concatenate((np.real(inp_array), np.imag(inp_array)))
 
 
 import random
