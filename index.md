@@ -98,6 +98,15 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Napisal som si viacero reward funkcii a tie tiez som zahrnul ako parameter do genetic algoritmu (aby pripadne vybral tu optimalznu z nich) </li>
 <li> Pracoval som na kapitole Reinforcement learning v LaTeXe</li>
 </ul>
+<li> 16.3 - 23.3 </li>
+<ul>
+<li> Stretol som sa s panom Petrovicom a radil som sa s nim ohladom reinforcement learningu</li>
+<li> Implementoval som annealing pri vybere bran </li>
+<li> Stretol som sa so skolitelom - zhodnotili sme tohtotyzdnovu pracu, </li>
+<li> Refactoring. </li>
+<li> Zacal som implementovat Complex PyTorch siet (lebo kvantovy stav moze byt aj komplexny), ale nakoniec teda rozlozim complexny vektor na 2*taky dlhy realnych cisiel </li>
+<li> Pracoval som na kapitole Reinforcement learning a Nonlocal games v LaTeXe</li>
+</ul>
 </ul>
 </details>
 
