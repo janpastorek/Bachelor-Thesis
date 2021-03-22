@@ -58,7 +58,6 @@ class abstractEnvironment(ABC):
         self.history_actions = []
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
         self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
         return self.repr_state
 
@@ -162,7 +161,7 @@ class abstractEnvironment(ABC):
         if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
             self.max_acc = self.accuracy
             if self.history_actions[-1] == "xxr0":
-                reward += 80 * (1 / (self.count_gates() + 1)) * self.accuracy # alebo za count_gates len(history_actuons)
+                reward += 80 * (1 / (self.count_gates() + 1)) * self.accuracy  # alebo za count_gates len(history_actuons)
         # if self.counter == self.max_gates:
         #     reward += 50 * (1 / (self.count_gates() + 1))
         return reward
@@ -216,7 +215,8 @@ class Game:
                     agent.replay(self.batch_size)
             state = next_state.copy()
             rew_accum += reward
-        print(env.history_actions)
+        try: print(env.history_actions_anneal)
+        except: print(env.history_actions)
         return env.accuracy, rew_accum
 
     def evaluate_train(self, N, agent, env):
@@ -327,20 +327,61 @@ def play_deterministic(game, which="best"):
 
 
 import NlgDiscreteStatesActions
+import NlgGeneticOptimalization
 
 
-def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
-    """ Learns to play the best quantum strategy according to game """
-    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'xyz']
-    ACTIONS = ['r' + axis + str(- 180 / 16 * i) for i in range(1, 9) for axis in 'xyz']
-    ACTIONS2.extend(ACTIONS)
+def quantumGEN(states, game):
+    best = 0
+    worst = 1
+    min_state = None
+    max_state = None
+    min_strategy = None
+    max_strategy = None
+
+    for s in states:
+        history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
+
+        env_max = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(history_actions) - 1, mutation_prob=0.05,
+                                                                history_actions=history_actions,
+                                                                game_type=game, state=s)
+        max_strategy = env_max.solve(50)[0]
+        load_acc_max = env_max.show_individual(max_strategy)
+
+        env_min = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(history_actions) - 1, mutation_prob=0.05,
+                                                                history_actions=history_actions,
+                                                                game_type=game, state=s)
+        min_strategy = env_min.solve(50)[0]
+        load_acc_min = env_min.show_individual(min_strategy)
+
+        # take the best found quantum, not just learned value
+        if load_acc_max > best:
+            best = load_acc_max
+            max_strategy = max_strategy.copy()
+            max_state = env_max.repr_state.copy()
+
+        # take the best found quantum, not just learned value
+        if load_acc_min < worst:
+            worst = load_acc_min
+            min_strategy = min_strategy.copy()
+            min_state = env_min.repr_state.copy()
+
+    return best, worst, min_state, max_state, min_strategy, max_strategy
+
+
+def quantumNN(states, agent_type, which, game):
+    # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
+    # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
+    ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
+    # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]
-    ALL_POSSIBLE_ACTIONS.append("xxr0")
-    ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    ALL_POSSIBLE_ACTIONS = [[p + q + a] for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS.append(["xxr0"])
+    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
+    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
+    ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
+    ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
 
     N = 3000
     n_questions = 4
@@ -352,14 +393,6 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
 
     learning_rates = [0.1]
     gammas = [1]
-    if n_qubits == 2:
-        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), np.array([1, 0, 0, 0], dtype=np.float64)]
-    else:
-        ALL_POSSIBLE_ACTIONS.append("a0cxnot")
-        ALL_POSSIBLE_ACTIONS.append("b0cxnot")
-        states = [np.array(
-            [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j,
-             0 + 0j])]
 
     best = 0
     worst = 1
@@ -373,18 +406,19 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
             for gamma in gammas:
                 env = NlgDiscreteStatesActions.Environment(n_questions=n_questions, game_type=game, max_gates=max_gates,
                                                            initial_state=state,
-                                                           best_or_worst=which)  # mozno optimalnejsie by to bolo keby sa to resetovalo iba
+                                                           best_or_worst=which,
+                                                           anneal=True)  # mozno optimalnejsie by to bolo keby sa to resetovalo iba
 
                 # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
                 if agent_type == BasicAgent:
-                    agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
+                    agent = BasicAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1,
                                        eps_min=0.01,
                                        eps_decay=0.9995, alpha=alpha, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
                                        model_type=LinearModel)
 
                 else:
-                    hidden_dim = [len(env.repr_state)]
-                    agent = DQNAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1, eps_min=0.01,
+                    hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2]
+                    agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=gamma, eps=1, eps_min=0.01,
                                      eps_decay=0.9995, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=alpha, hidden_layers=len(hidden_dim),
                                      hidden_dim=hidden_dim)
 
@@ -416,6 +450,19 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
                     min_strategy = env.min_found_strategy.copy()
                     min_state = env.min_found_state.copy()
 
+    return best, worst, min_state, max_state, min_strategy, max_strategy
+
+
+def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
+    """ Learns to play the best quantum strategy according to game """
+    if n_qubits == 2:
+        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), np.array([1, 0, 0, 0], dtype=np.float64)]
+        best, worst, min_state, max_state, min_strategy, max_strategy = quantumGEN(states, game)
+    else:
+        states = [np.array(
+            [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j,
+             0 + 0j])]
+        best, worst, min_state, max_state, min_strategy, max_strategy = quantumNN(states, agent_type, which, game)
     return best, worst, min_state, max_state, min_strategy, max_strategy
 
 

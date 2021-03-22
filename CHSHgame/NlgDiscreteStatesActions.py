@@ -28,7 +28,6 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.initial_state = initial_state
         self.state = self.initial_state.copy()
         self.num_players = num_players
-        # self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state] + [len(self.history_actions)], dtype=np.float64)
 
         self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
 
@@ -95,22 +94,6 @@ class Environment(NonLocalGame.abstractEnvironment):
                 # apply action to state
                 operation = []
 
-                # if q[0] == 0 and action[0:2] == 'a0':
-                #     self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
-                #                            self.state)
-                #
-                # if q[0] == 1 and action[0:2] == 'a1':
-                #     self.state = np.matmul(np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2)),
-                #                            self.state)
-                #
-                # if q[0] == 0 and action[0:2] == 'b0':
-                #     self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
-                #                            self.state)
-                #
-                # if q[0] == 1 and action[0:2] == 'b1':
-                #     self.state = np.matmul(np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix()),
-                #                            self.state)
-
                 if gate == CXGate:
                     if to_whom in 'a0a1':
                         operation = np.kron(CXGate(ctrl_state=1).to_matrix(), np.identity(I_length))
@@ -136,27 +119,26 @@ class Environment(NonLocalGame.abstractEnvironment):
 
             result.append(self.measure_analytic())
 
-        # self.repr_state[-1] = len(self.history_actions)
         return result
 
     def save_interesting_strategies(self):
         if self.accuracy > self.max_acc:
             self.max_found_state = self.repr_state.copy()
-            self.max_found_strategy = self.history_actions.copy()
+            self.max_found_strategy = self.history_actions_anneal.copy()
 
         elif self.accuracy == self.max_acc:
             if len(self.history_actions) < len(self.max_found_strategy):
                 self.max_found_state = self.repr_state.copy()
-                self.max_found_strategy = self.history_actions.copy()
+                self.max_found_strategy = self.history_actions_anneal.copy()
 
         if self.accuracy < self.min_acc:
             self.max_found_state = self.repr_state.copy()
-            self.max_found_strategy = self.history_actions.copy()
+            self.max_found_strategy = self.history_actions_anneal.copy()
 
         elif self.accuracy == self.min_acc:
             if len(self.history_actions) < len(self.min_found_strategy):
                 self.min_found_state = self.repr_state.copy()
-                self.min_found_strategy = self.history_actions.copy()
+                self.min_found_strategy = self.history_actions_anneal.copy()
 
         if self.min_found_strategy == []: self.min_found_strategy.append('xxr0')
         if self.max_found_strategy == []: self.max_found_strategy.append('xxr0')
@@ -241,7 +223,6 @@ if __name__ == '__main__':
     # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
     # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
     ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
-    # ACTIONS = ['r' + axis + "0" for axis in 'y']
     # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -250,9 +231,8 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append(["xxr0"])
     # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
-    ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
-    # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
+    # ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
+    # ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
 
     N = 4000
     n_questions = 4
@@ -265,7 +245,7 @@ if __name__ == '__main__':
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, game_type, max_gates, initial_state=state_2, reward_function=Environment.reward_combined, anneal=True)
+    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined, anneal=True)
 
     hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 
