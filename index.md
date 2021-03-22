@@ -106,6 +106,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Refactoring. </li>
 <li> Zacal som implementovat Complex PyTorch siet (lebo kvantovy stav moze byt aj komplexny), ale nakoniec teda rozlozim complexny vektor na 2*taky dlhy realnych cisiel </li>
 <li> Pracoval som na kapitole Reinforcement learning a Nonlocal games v LaTeXe</li>
+<li> Spracoval som prezentáciu pre svoju bakalársku prácu </li>
 </ul>
 </ul>
 </details>
