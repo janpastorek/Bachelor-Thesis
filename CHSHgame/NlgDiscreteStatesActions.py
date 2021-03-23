@@ -15,7 +15,7 @@ class Environment(NonLocalGame.abstractEnvironment):
     """ Creates CHSH environments for quantum strategies, discretizes and states and uses discrete actions """
 
     def __init__(self, n_questions, game_type, max_gates, num_players=2,
-                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128), best_or_worst="best", reward_function=None,
+                 initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64), best_or_worst="best", reward_function=None,
                  anneal=False):
         self.n_questions = n_questions
         self.counter = 1
@@ -29,9 +29,9 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.state = self.initial_state.copy()
         self.num_players = num_players
 
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex64)
 
-        self.state_size = len(self.repr_state) * 2
+        self.state_size = len(self.repr_state) * 2 # times 2 because of complex array to array of real numbers
 
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
         self.max_acc = self.accuracy
@@ -71,23 +71,20 @@ class Environment(NonLocalGame.abstractEnvironment):
 
             for action in history_actions:
                 # get info from action
-                if action == "biggerAngle":
-                    self.velocity *= 2
-                    continue
-                elif action == "smallerAngle":
-                    self.velocity /= 2
-                    continue
+                # if action == "biggerAngle":
+                #     self.velocity *= 2
+                #     continue
+                # elif action == "smallerAngle":
+                #     self.velocity /= 2
+                #     continue
 
+                # decode action
                 gate = self.get_gate(action)
-                if gate == IGate:
-                    continue
-
+                if gate == IGate: continue
                 to_whom = action[0:2]
                 rotate_ancilla = action[2] == 'a'
-                try:
-                    gate_angle = np.array([action[4:]], dtype=np.float64) * self.velocity
-                except ValueError:
-                    gate_angle = 0
+                try: gate_angle = np.array([action[4:]], dtype=np.float32) * self.velocity
+                except ValueError: gate_angle = 0
 
                 I_length = int(len(self.initial_state) ** (1 / self.num_players))
 
@@ -111,7 +108,7 @@ class Environment(NonLocalGame.abstractEnvironment):
                         if len(self.state) != 4: operation = np.kron(np.identity(I_length), calc_operation)
                         else: operation = calc_operation
 
-                if operation != []:
+                if len(operation) != 0:
                     self.state = np.matmul(operation, self.state)
 
             # modify repr_state according to state
@@ -242,7 +239,7 @@ if __name__ == '__main__':
                  [0, 1, 1, 0]]
     max_gates = 10
     round_to = 6
-    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64)
+    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float32)
     state_2 = np.array(
         [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined, anneal=True)

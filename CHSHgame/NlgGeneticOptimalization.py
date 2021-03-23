@@ -64,7 +64,7 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
             # Alice - a and Bob - b share an entangled state
             # The input to alice and bob is random
             # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
-
+            self.state = self.initial.copy()
             self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
 
             for action in x:
@@ -83,15 +83,14 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
                     calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
                     operation = calc_operation
 
-                if operation != []:
+                if len(operation) != 0:
                     self.state = np.matmul(operation, self.state)
 
             self.repr_state[g * self.num_players ** 2:(g + 1) * self.num_players ** 2] = self.state.copy()
 
             result.append(self.measure_analytic())
         fitness_individual = self.calc_accuracy(result)
-        if self.best_or_worst == "best": return fitness_individual
-        else: return -fitness_individual
+        return fitness_individual
 
     @override
     def number_mutation(self, x, prob):
@@ -137,7 +136,7 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
 
 if __name__ == "__main__":
     # Solve to find optimal individual
-    ACTIONS2 = ['r' + axis + "0" for axis in 'y']
+    ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
     # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -147,9 +146,9 @@ if __name__ == "__main__":
             [1, 0, 0, 1],
             [1, 0, 0, 1],
             [0, 1, 1, 0]]
-    ga = CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS)-1, mutation_prob=0.1, history_actions=ALL_POSSIBLE_ACTIONS,
-                              game_type=game)
-    best = ga.solve(100)  # you can also play with max. generations
+    ga = CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1, history_actions=ALL_POSSIBLE_ACTIONS,
+                              game_type=game, best_or_worst="worst")
+    best = ga.solve(22)  # you can also play with max. generations
     ga.show_individual(best[0])
 
     fig_dims = (10, 6)

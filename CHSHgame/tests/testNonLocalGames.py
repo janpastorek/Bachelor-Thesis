@@ -146,14 +146,22 @@ class TestCHSH(unittest.TestCase):
         assert round(win_rate - env.calc_accuracy(result) - 0) == 0
 
     def testGeneticAlg(self):
-        history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
-        tactic = [[1, 0, 0, 1],
-                  [1, 0, 0, 1],
-                  [1, 0, 0, 1],
-                  [0, 1, 1, 0]]
-        ga = CHSHgeneticOptimizer(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
-                                  game_type=tactic)
-        best = ga.solve(50)  # you can also play with max. generations
+        # Solve to find optimal individual
+        ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
+        # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+        PERSON = ['a', 'b']
+        QUESTION = ['0', '1']
+
+        ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
+        game = [[1, 0, 0, 1],
+                [1, 0, 0, 1],
+                [1, 0, 0, 1],
+                [0, 1, 1, 0]]
+        ga = CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1,
+                                  history_actions=ALL_POSSIBLE_ACTIONS,
+                                  game_type=game, best_or_worst="best")
+        best = ga.solve(22)  # you can also play with max. generations
+        ga.show_individual(best[0])
         assert best[1] >= 0.83
 
     def testTensorflow1(self):

@@ -58,7 +58,7 @@ class abstractEnvironment(ABC):
         self.history_actions = []
         self.state = self.initial_state.copy()
         self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex128)
+        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex64)
         return self.repr_state
 
     @abstractmethod
@@ -194,7 +194,7 @@ class Game:
         # instead we will explore using an epsilon-soft policy
         state = env.reset()
         if self.scaler is not None: state = self.scaler.transform([state])
-        else: state = np.array([np.around(state, self.round_to)], dtype=np.float64)
+        else: state = np.array([np.around(state, self.round_to)], dtype=np.float32)
         done = False
 
         # be aware of the timing
@@ -206,7 +206,7 @@ class Game:
             action = agent.act(state)
             next_state, reward, done = env.step(action[0])
             if self.scaler is not None: next_state = self.scaler.transform([np.around(next_state, self.round_to)])
-            else: next_state = np.array([np.around(next_state, self.round_to)], dtype=np.float64)
+            else: next_state = np.array([np.around(next_state, self.round_to)], dtype=np.float32)
             if DO == 'train':
                 if type(agent) == BasicAgent:
                     agent.train(state.copy(), action[1], reward, next_state.copy(), done)
@@ -339,31 +339,34 @@ def quantumGEN(states, game):
     max_strategy = None
 
     for s in states:
-        history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
+        ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
+        # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+        PERSON = ['a', 'b']
+        QUESTION = ['0', '1']
 
-        env_max = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(history_actions) - 1, mutation_prob=0.05,
-                                                                history_actions=history_actions,
-                                                                game_type=game, state=s)
-        max_strategy = env_max.solve(50)[0]
-        load_acc_max = env_max.show_individual(max_strategy)
+        ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
 
-        env_min = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(history_actions) - 1, mutation_prob=0.05,
-                                                                history_actions=history_actions,
-                                                                game_type=game, state=s)
-        min_strategy = env_min.solve(50)[0]
-        load_acc_min = env_min.show_individual(min_strategy)
+        env_max = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1,
+                                  history_actions=ALL_POSSIBLE_ACTIONS,
+                                  game_type=game, best_or_worst="best")
+        res_max = env_max.solve(22)
 
-        # take the best found quantum, not just learned value
-        if load_acc_max > best:
-            best = load_acc_max
-            max_strategy = max_strategy.copy()
-            max_state = env_max.repr_state.copy()
+        env_min = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1,
+                                  history_actions=ALL_POSSIBLE_ACTIONS,
+                                  game_type=game, best_or_worst="worst")
+        res_min = env_min.solve(22)
 
         # take the best found quantum, not just learned value
-        if load_acc_min < worst:
-            worst = load_acc_min
-            min_strategy = min_strategy.copy()
-            min_state = env_min.repr_state.copy()
+        if res_max[1] > best:
+            best = res_max[1]
+            max_strategy = res_max[0]
+            max_state = res_max[2]
+
+        # take the best found quantum, not just learned value
+        if res_min[1] < worst:
+            worst = res_min[1]
+            min_strategy = res_min[0]
+            min_state = res_min[2]
 
     return best, worst, min_state, max_state, min_strategy, max_strategy
 
@@ -537,8 +540,8 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
                 differences.append(
                     (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max,
                      min_state.tolist(), max_state.tolist(), min_strategy, max_strategy))
-        #     break
-        # break
+            break
+        break
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
     for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max, min_state, max_state, min_strategy, max_strategy in differences:
