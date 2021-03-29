@@ -108,7 +108,7 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Pracoval som na kapitole Reinforcement learning a Nonlocal games v LaTeXe</li>
 <li> Spracoval som prezentáciu pre svoju bakalársku prácu </li>
 </ul>
-<li> 16.3 - 23.3 </li>
+<li> 23.3 - 30.3 </li>
 <ul>
 <li> Refactoring </li>
 <li> Nechal som vypocty ist 1 den, a vysledky som spracoval a poslal skolitelovi </li>
