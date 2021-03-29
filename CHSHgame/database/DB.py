@@ -57,7 +57,7 @@ class CHSHdb:
            MAX_STRATEGY TEXT[] NOT NULL,
            MIN_STATE FLOAT[] NOT NULL,
            MAX_STATE FLOAT[] NOT NULL,
-           GAME FLOAT[] NOT NULL,
+           GAME INT[] NOT NULL,
            unique (PLAYERS, QUESTIONS, GAME)
         )'''
 
@@ -74,7 +74,7 @@ class CHSHdb:
                    PLAYERS INT NOT NULL CHECK ( PLAYERS >= 2 ),
                    CATEGORY FLOAT[] NOT NULL CHECK ( 0 <= ALL(CATEGORY) AND 1 >= ALL(CATEGORY) ),
                    DIFFICULTY INT NOT NULL CHECK ( DIFFICULTY >= 0),
-                   GAME FLOAT[] NOT NULL,
+                   GAME INT[] NOT NULL,
                    unique (PLAYERS, QUESTIONS, GAME)
         )'''
 
