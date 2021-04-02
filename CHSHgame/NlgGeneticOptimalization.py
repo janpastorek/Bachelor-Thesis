@@ -77,10 +77,10 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
                 operation = []
 
                 if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
-                    calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
+                    calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
                     operation = calc_operation
                 if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
-                    calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
+                    calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
                     operation = calc_operation
 
                 if len(operation) != 0:
@@ -147,9 +147,10 @@ if __name__ == "__main__":
             [0, 0, 1, 1],
             [1, 1, 0, 0]]
     ga = CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1, history_actions=ALL_POSSIBLE_ACTIONS,
-                              game_type=game, best_or_worst="best", state= np.array([1, 0, 0, 0], dtype=np.float64))
+                              game_type=game, best_or_worst="best", state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128))
     best = ga.solve(22)  # you can also play with max. generations
     ga.show_individual(best[0])
+    print(best[1])
 
     fig_dims = (10, 6)
 

@@ -347,13 +347,13 @@ def quantumGEN(states, game):
         ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
 
         env_max = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1,
-                                  history_actions=ALL_POSSIBLE_ACTIONS,
-                                  game_type=game, best_or_worst="best", state=s)
+                                                                history_actions=ALL_POSSIBLE_ACTIONS,
+                                                                game_type=game, best_or_worst="best", state=s)
         res_max = env_max.solve(30)
 
         env_min = NlgGeneticOptimalization.CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1,
-                                  history_actions=ALL_POSSIBLE_ACTIONS,
-                                  game_type=game, best_or_worst="worst", state=s)
+                                                                history_actions=ALL_POSSIBLE_ACTIONS,
+                                                                game_type=game, best_or_worst="worst", state=s)
         res_min = env_min.solve(30)
 
         # take the best found quantum, not just learned value
@@ -459,7 +459,7 @@ def quantumNN(states, agent_type, which, game):
 def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     """ Learns to play the best quantum strategy according to game """
     if n_qubits == 2:
-        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float64), np.array([1, 0, 0, 0], dtype=np.float64)]
+        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128), np.array([1, 0, 0, 0], dtype=np.complex128)]
         best, worst, min_state, max_state, min_strategy, max_strategy = quantumGEN(states, game)
     else:
         states = [np.array(
@@ -511,6 +511,26 @@ from database import DB
 
 def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
                              n_qubits=2):
+    def playGame():
+        classical_max, classical_min = play_deterministic(game_type, best_or_worst)
+        quantum_max, quantum_min, min_state, max_state, min_strategy, max_strategy = play_quantum(game_type, best_or_worst,
+                                                                                                  agent_type=agent_type, n_qubits=n_qubits)
+        # quantum_max = 0
+
+        difference_max = 0 if classical_max > quantum_max else quantum_max - classical_max
+        difference_min = 0 if classical_min < quantum_min else classical_min - quantum_min
+        min_state = min_state.tolist()
+        max_state = max_state.tolist()
+        differences.append(
+            (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max,
+             min_state, max_state, min_strategy, max_strategy))
+
+        db.insert(category=list(category), difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min,
+                  classic_max=classical_max,
+                  quantum_max=quantum_max, difference_min=difference_min, difference_max=difference_max, min_state=min_state,
+                  max_state=max_state,
+                  min_strategy=min_strategy, max_strategy=max_strategy, game=game_type)
+
     """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
     assert n_qubits == 2 or n_qubits == 4
     db = DB.CHSHdb()
@@ -528,42 +548,34 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
     differences = []
     for category, difficulties in categories.items():
         for difficulty in difficulties.keys():
-            for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
-                game_type = random.choice(categories[category][difficulty])
-                classical_max, classical_min = play_deterministic(game_type, best_or_worst)
-                quantum_max, quantum_min, min_state, max_state, min_strategy, max_strategy = play_quantum(game_type, best_or_worst,
-                                                                                                          agent_type=agent_type, n_qubits=n_qubits)
-                # quantum_max = 0
-
-                difference_max = 0 if classical_max > quantum_max else quantum_max - classical_max
-                difference_min = 0 if classical_min < quantum_min else classical_min - quantum_min
-                differences.append(
-                    (category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max,
-                     min_state.tolist(), max_state.tolist(), min_strategy, max_strategy))
-            # break
-        # break
+            if choose_n_games_from_each_category != "all":
+                for _ in range(choose_n_games_from_each_category):  # choose 10 tactics from each category randomly
+                    if choose_n_games_from_each_category != "all":
+                        game_type = random.choice(categories[category][difficulty])
+                        playGame()
+            else:
+                for game_type in categories[category][difficulty]:
+                    playGame()
 
     # differences.sort(key=lambda x: x[1])  # sorts according to difference in winning rate
-    for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max, min_state, max_state, min_strategy, max_strategy in differences:
-        print()
-        print("category: ", category)
-        print("difficulty: ", difficulty)
-        print("game = ")
-        game_type = list(game_type)
-        for i, row in enumerate(game_type):
-            game_type[i] = list(game_type[i])
-            print(row)
-        print("difference_max = ", difference_max)
-        print("difference_min = ", difference_min)
-        print("max state = ", max_state)
-        print("min state = ", min_state)
-        print("max strategy = ", max_strategy)
-        print("min strategy = ", min_strategy)
-        print()
-
-        db.insert(category=list(category), difficulty=difficulty, classic_min=classical_min, quantum_min=quantum_min, classic_max=classical_max,
-                  quantum_max=quantum_max, difference_min=difference_min, difference_max=difference_max, min_state=min_state, max_state=max_state,
-                  min_strategy=min_strategy, max_strategy=max_strategy, game=game_type)
+    if choose_n_games_from_each_category != "all":
+        for category, difficulty, classical_min, quantum_min, classical_max, quantum_max, game_type, difference_min, difference_max, min_state, max_state, min_strategy, max_strategy in differences:
+            print()
+            print("category: ", category)
+            print("difficulty: ", difficulty)
+            print("game = ")
+            game_type = list(game_type)
+            for i, row in enumerate(game_type):
+                game_type[i] = list(game_type[i])
+                print(row)
+            print("difference_max = ", difference_max)
+            print("difference_min = ", difference_min)
+            print("max state = ", max_state)
+            print("min state = ", min_state)
+            print("max strategy = ", max_strategy)
+            print("min strategy = ", min_strategy)
+            print()
+    else: print("Too much to print")
 
 
 if __name__ == '__main__':
@@ -578,4 +590,4 @@ if __name__ == '__main__':
 
     # print([name for name, val in CHSHv02qDiscreteStatesActions.Environment.__dict__.items() if callable(val)])  # dostanem mena funkcii
 
-    max_entangled_difference(choose_n_games_from_each_category=5, best_or_worst="best", agent_type=DQNAgent, n_qubits=2)
+    max_entangled_difference(choose_n_games_from_each_category="all", best_or_worst="best", agent_type=DQNAgent, n_qubits=2)
