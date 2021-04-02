@@ -96,11 +96,11 @@ class abstractEnvironment(ABC):
     def get_gate(self, action):
         """ :returns gate got from string code of action """
         gate = action[2:4]
-        if gate == "rx":
+        if gate == "rx" or gate == "ax":
             return RXGate
-        elif gate == "ry":
+        elif gate == "ry" or gate == "ay":
             return RYGate
-        elif gate == "rz":
+        elif gate == "rz" or gate == "az":
             return RZGate
         elif gate == "cx":
             return CXGate
@@ -459,7 +459,7 @@ def quantumNN(states, agent_type, which, game):
 def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
     """ Learns to play the best quantum strategy according to game """
     if n_qubits == 2:
-        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128), np.array([1, 0, 0, 0], dtype=np.complex128)]
+        states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64), np.array([1, 0, 0, 0], dtype=np.complex64)]
         best, worst, min_state, max_state, min_strategy, max_strategy = quantumGEN(states, game)
     else:
         states = [np.array(

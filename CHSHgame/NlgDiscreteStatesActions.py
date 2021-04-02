@@ -55,6 +55,7 @@ class Environment(NonLocalGame.abstractEnvironment):
     @NonLocalGame.override
     def reset(self):
         self.velocity = 1
+        self.history_actions_anneal = []
         return self.complex_array_to_real(super().reset())  # + np.array([len(self.history_actions)], dtype=np.float64)
 
     def calculate_state(self, history_actions, anneal=False):
@@ -98,12 +99,15 @@ class Environment(NonLocalGame.abstractEnvironment):
                         operation = np.kron(np.identity(I_length), CXGate(ctrl_state=0).to_matrix())
                 else:
                     if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
-                        if rotate_ancilla: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
+                        if rotate_ancilla:
+                            calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
                         else: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
-                        if len(self.state) != 4: operation = np.kron(calc_operation, np.identity(I_length))
+                        if len(self.state) != 4:
+                            operation = np.kron(calc_operation, np.identity(I_length))
                         else: operation = calc_operation
                     if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
-                        if rotate_ancilla: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
+                        if rotate_ancilla:
+                            calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
                         else: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
                         if len(self.state) != 4: operation = np.kron(np.identity(I_length), calc_operation)
                         else: operation = calc_operation
@@ -219,7 +223,7 @@ if __name__ == '__main__':
     # Hyperparameters setting
     # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
     # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
-    ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
+    ACTIONS2 = [q + axis + "0" for axis in 'xyz' for q in 'ra']
     # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -228,8 +232,8 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append(["xxr0"])
     # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    # ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
-    # ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
+    ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
+    ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
 
     N = 4000
     n_questions = 4
@@ -239,10 +243,10 @@ if __name__ == '__main__':
                  [0, 1, 1, 0]]
     max_gates = 10
     round_to = 6
-    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.float32)
+    state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
     state_2 = np.array(
-        [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
-    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_combined, anneal=True)
+        [ 0+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, 0+0j ])
+    env = Environment(n_questions, game_type, max_gates, initial_state=state_2, reward_function=Environment.reward_only_difference, anneal=True)
 
     hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 
@@ -262,7 +266,7 @@ if __name__ == '__main__':
         onehot_to_action[str(a_encoded)] = x
         action_to_onehot[x] = str(a_encoded)
 
-    agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+    agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
                      eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim, onehot_to_action=onehot_to_action, action_to_onehot=action_to_onehot)
 
