@@ -124,6 +124,7 @@ class Environment(NonLocalGame.abstractEnvironment):
 
     def save_interesting_strategies(self):
         if self.accuracy > self.max_acc:
+            self.max_acc = self.accuracy
             self.max_found_state = self.repr_state.copy()
             self.max_found_strategy = self.history_actions_anneal.copy()
 
@@ -133,6 +134,7 @@ class Environment(NonLocalGame.abstractEnvironment):
                 self.max_found_strategy = self.history_actions_anneal.copy()
 
         if self.accuracy < self.min_acc:
+            self.min_acc = self.accuracy
             self.max_found_state = self.repr_state.copy()
             self.max_found_strategy = self.history_actions_anneal.copy()
 
@@ -156,14 +158,14 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.history_actions_anneal.append(action)
 
         try:
-            result, self.repr_state = self.memory_state[tuple(self.history_actions)]
+            result, self.repr_state = self.memory_state[tuple(self.history_actions)][:2]
         except KeyError:
             if action not in {"xxr0", "smallerAngle", "biggerAngle", "a0cxnot", "b0cxnot"} and self.use_annealing:
                 self.history_actions_anneal[-1] = self.history_actions_anneal[-1][:4] + str(self.anneal())  # simulated annealing on the last chosen action
 
             if self.use_annealing: result = self.calculate_state(self.history_actions_anneal)
             else: result = self.calculate_state(self.history_actions)
-            self.memory_state[tuple(self.history_actions)] = (result, self.repr_state.copy())
+            self.memory_state[tuple(self.history_actions)] = (result, self.repr_state.copy(), self.history_actions_anneal.copy())
 
         # accuracy of winning CHSH game
         before = self.accuracy
@@ -174,13 +176,13 @@ class Environment(NonLocalGame.abstractEnvironment):
         if self.best_or_worst == "worst": difference_in_accuracy *= (-1)
 
         try:
-            reward = self.reward_funcion(self, difference_in_accuracy * 100)
+            reward = self.reward_funcion(self, difference_in_accuracy)
         except:
-            reward = self.reward_funcion(difference_in_accuracy * 100)
+            reward = self.reward_funcion(difference_in_accuracy)
 
         self.save_interesting_strategies()
 
-        if self.counter == self.max_gates or self.history_actions[-1] == 'xxr0': done = True
+        if self.counter == self.max_gates or action == 'xxr0': done = True
         if not done: self.counter += 1
         return self.complex_array_to_real(self.repr_state), reward, done
 
@@ -224,6 +226,7 @@ if __name__ == '__main__':
     # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
     # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
     ACTIONS2 = [q + axis + "0" for axis in 'xyz' for q in 'ra']
+    ACTIONS2 = [q + axis + "0" for axis in 'y' for q in 'r']
     # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -232,8 +235,8 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append(["xxr0"])
     # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
     # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
-    ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
+    # ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
+    # ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
 
     N = 4000
     n_questions = 4
@@ -244,9 +247,9 @@ if __name__ == '__main__':
     max_gates = 10
     round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
-    state_2 = np.array(
-        [ 0+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, 0+0j ])
-    env = Environment(n_questions, game_type, max_gates, initial_state=state_2, reward_function=Environment.reward_only_difference, anneal=True)
+    # state_2 = np.array(
+    #     [ 0+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, 0+0j ])
+    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True)
 
     hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 
@@ -266,7 +269,7 @@ if __name__ == '__main__':
         onehot_to_action[str(a_encoded)] = x
         action_to_onehot[x] = str(a_encoded)
 
-    agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=0.9, eps=1, eps_min=0.01,
+    agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
                      eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim, onehot_to_action=onehot_to_action, action_to_onehot=action_to_onehot)
 

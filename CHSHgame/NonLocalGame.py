@@ -215,7 +215,7 @@ class Game:
                     agent.replay(self.batch_size)
             state = next_state.copy()
             rew_accum += reward
-        try: print(env.history_actions_anneal)
+        try: print(env.memory_state[tuple(env.history_actions)][2])
         except: print(env.history_actions)
         return env.accuracy, rew_accum
 
