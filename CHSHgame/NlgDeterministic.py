@@ -86,3 +86,13 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         # print(accuracies)
         return max(accuracies), min(accuracies)
+
+
+if __name__ == '__main__':
+    game_type = [[0, 1, 1, 1],
+                 [0, 1, 0, 0],
+                 [1, 0, 1, 0],
+                 [1, 0, 0, 0]]
+
+    env = Environment(game_type, 2,2)
+    print(env.play_all_strategies())

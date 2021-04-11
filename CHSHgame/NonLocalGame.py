@@ -1,3 +1,4 @@
+import math
 from math import sqrt
 
 import matplotlib.pyplot as plt
@@ -73,12 +74,34 @@ class abstractEnvironment(ABC):
 
     def calc_accuracy(self, result):
         """ :returns winning accuracy / win rate based on winning game_type """
+        result = self.EPR_result(result)
         win_rate = 0
         for x, riadok in enumerate(self.game_type):
             for y, stlpec in enumerate(riadok):
                 win_rate += (stlpec * result[x][y])
         win_rate = win_rate * 1 / len(self.game_type)
         return win_rate
+
+    def EPR_result(self, result):
+        """ If state is bigger than with 2 qubits, we must reduce state so that it matches the scale of the game.
+        This functions reduces bigger states result to smaller one by taking the first bit. """
+        n_qubits = self.n_qubits_from_state()
+        if n_qubits == 2: return result
+        reduce_by = 2 ** (n_qubits - 2)  # formula how much state should be reduced
+
+        new_result = []
+        for r, row in enumerate(result):
+            new_result.append([])
+            for c in range(0, len(row), reduce_by*2):
+                new_result[r].append(sum(result[r][c:(c+reduce_by//2)]) + sum(result[r][c+reduce_by:(c+reduce_by + reduce_by//2)]))
+                new_result[r].append(sum(result[r][(c + reduce_by // 2): c+reduce_by]) + sum(result[r][(c+reduce_by + reduce_by//2):(c+reduce_by*2)]))
+
+        return new_result
+
+    def n_qubits_from_state(self):
+        """ There are 2^n states of n qubits, to get the n, we need to make log2 from state"""
+        assert len(self.state) % 2 == 0
+        return int(math.log(len(self.state), 2))
 
     def count_gates(self):
         """ :returns count of relevant gates """
