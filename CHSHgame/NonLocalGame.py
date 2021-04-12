@@ -58,8 +58,8 @@ class abstractEnvironment(ABC):
         self.counter = 1
         self.history_actions = []
         self.state = self.initial_state.copy()
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions)])
-        self.repr_state = np.array([x for _ in range(self.num_players ** 2) for x in self.state], dtype=np.complex64)
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions * self.n_players)])
+        self.repr_state = np.array([x for _ in range(self.n_players ** 2) for x in self.state], dtype=np.complex64)
         return self.repr_state
 
     @abstractmethod
@@ -74,7 +74,12 @@ class abstractEnvironment(ABC):
 
     def calc_accuracy(self, result):
         """ :returns winning accuracy / win rate based on winning game_type """
-        result = self.EPR_result(result)
+        if self.n_games == 1:
+            result = self.EPR_result(result)
+        else: return self.paralel_non_local(result)
+        return self.calc_acc(result)
+
+    def calc_acc(self, result):
         win_rate = 0
         for x, riadok in enumerate(self.game_type):
             for y, stlpec in enumerate(riadok):
@@ -85,18 +90,44 @@ class abstractEnvironment(ABC):
     def EPR_result(self, result):
         """ If state is bigger than with 2 qubits, we must reduce state so that it matches the scale of the game.
         This functions reduces bigger states result to smaller one by taking the first bit. """
-        n_qubits = self.n_qubits_from_state()
-        if n_qubits == 2: return result
-        reduce_by = 2 ** (n_qubits - 2)  # formula how much state should be reduced
+        if self.n_qubits == 2: return result
 
         new_result = []
         for r, row in enumerate(result):
             new_result.append([])
-            for c in range(0, len(row), reduce_by*2):
-                new_result[r].append(sum(result[r][c:(c+reduce_by//2)]) + sum(result[r][c+reduce_by:(c+reduce_by + reduce_by//2)]))
-                new_result[r].append(sum(result[r][(c + reduce_by // 2): c+reduce_by]) + sum(result[r][(c+reduce_by + reduce_by//2):(c+reduce_by*2)]))
+            for c in range(0, len(row), self.reduce_by * 2):
+                new_result[r].append(
+                    sum(result[r][c:(c + self.reduce_by // 2)]) + sum(result[r][c + self.reduce_by:(c + self.reduce_by + self.reduce_by // 2)]))
+                new_result[r].append(
+                    sum(result[r][(c + self.reduce_by // 2): c + self.reduce_by]) + sum(
+                        result[r][(c + self.reduce_by + self.reduce_by // 2):(c + self.reduce_by * 2)]))
 
         return new_result
+
+    def paralel_non_local(self, result):
+        """ works for 2 paralel games, selects probabilities to paralel games from on"""
+        assert self.n_games == 2 and self.n_qubits >= 4
+
+        dividing_to_paralel = dict()
+        for state in result:
+            for x in range(len(state)):
+                dividing_to_paralel[self.possible_states[x]] = self.state[x]
+
+        new_result_1 = []
+        new_result_2 = []
+        for s in range(len(result)):
+            paralel_1 = dict()
+            paralel_2 = dict()
+            for key in dividing_to_paralel.keys():
+                try: paralel_1[str(key[0]) + str(key[2])] += dividing_to_paralel[key]
+                except KeyError: paralel_1[str(key[0]) + str(key[2])] = dividing_to_paralel[key]
+                try: paralel_2[str(key[1]) + str(key[3])] += dividing_to_paralel[key]
+                except KeyError: paralel_2[str(key[1]) + str(key[3])] = dividing_to_paralel[key]
+
+            new_result_1.append(list(paralel_1.values()))
+            new_result_2.append(list(paralel_2.values()))
+
+        return float(self.calc_acc(new_result_1) * self.calc_acc(new_result_2))
 
     def n_qubits_from_state(self):
         """ There are 2^n states of n qubits, to get the n, we need to make log2 from state"""

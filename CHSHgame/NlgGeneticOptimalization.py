@@ -28,6 +28,7 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
         self.num_players = num_players
         self.initial = state
         self.game_type = game_type
+        self.n_games = 1
 
         self.reset(history_actions, n_crossover)
 
