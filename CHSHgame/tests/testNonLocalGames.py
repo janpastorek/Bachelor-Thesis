@@ -1,6 +1,6 @@
 import unittest
-from CHSHv02qDiscreteStatesActions import Environment
-from CHSHv05qGeneticOptimalization import CHSHgeneticOptimizer
+from NlgDiscreteStatesActions import Environment
+from NlgGeneticOptimalization import CHSHgeneticOptimizer
 import numpy as np
 from qiskit.extensions import RYGate
 from math import pi
@@ -120,61 +120,65 @@ class TestCHSH(unittest.TestCase):
 
         assert (win_rate == env.calc_accuracy(result))
 
-    def testGeneticAlg(self):
-        history_actions = ['a0r0', 'b0r0', 'a1r0', 'b1r0']
-        tactic = [[1, 0, 0, 1],
-                  [1, 0, 0, 1],
-                  [1, 0, 0, 1],
-                  [0, 1, 1, 0]]
-        ga = CHSHgeneticOptimizer(population_size=15, n_crossover=3, mutation_prob=0.05, history_actions=history_actions,
-                                  evaluation_tactic=tactic)
-        best = ga.solve(50)  # you can also play with max. generations
-        assert best[1] >= 0.83
+    def testCalcWinRate3(self):
+        n_questions = 4
+        tactic = [[1,1,1,1] for i in range(n_questions)]
+        max_gates = 10
+        env = Environment(n_questions, tactic, max_gates)
+        result = [env.measure_analytic() for i in range(4)]
+        assert (round(env.calc_accuracy(result)) == 1)
 
-    def testTensorflow(self):
-        pass
-        # import numpy as np
-        #
-        # from tensorflow.keras import layers, models
-        #
-        # IMAGE_WIDTH = 128
-        # IMAGE_HEIGHT = 128
-        #
-        # model = models.Sequential()
-        # # model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)))
-        # # model.add(layers.MaxPooling2D((2, 2)))
-        # # model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-        # # model.add(layers.MaxPooling2D((2, 2)))
-        # # model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-        # # model.add(layers.Flatten())
-        # model.add(layers.Dense(4, activation='relu'))
-        # model.add(layers.Dense(32, activation='softmax'))
-        #
-        # model.compile(optimizer='adam',
-        #               loss='categorical_crossentropy',
-        #               metrics=['accuracy'])
-        #
-        # BATCH_SIZE = 128
-        #
-        # images = np.zeros((BATCH_SIZE, IMAGE_WIDTH))
-        # labels = np.zeros((BATCH_SIZE, 32))
-        #
-        # history = model.fit(images, labels, epochs=1)
+    def testCalcWinRate4(self):
+        n_questions = 4
+        tactic = [[0,0,0,0] for i in range(n_questions)]
+        max_gates = 10
+        env = Environment(n_questions, tactic, max_gates)
+        result = [env.measure_analytic() for i in range(4)]
+
+        # this is for sure good way to calculate
+        win_rate = 0
+        for mat in result[:-1]:
+            print(mat)
+            win_rate += 1 / 4 * (mat[0] + mat[3])
+
+        win_rate += 1 / 4 * (result[-1][1] + result[-1][3])
+
+        assert round(win_rate - env.calc_accuracy(result) - 0) == 0
+
+    def testGeneticAlg(self):
+        # Solve to find optimal individual
+        ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
+        # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+        PERSON = ['a', 'b']
+        QUESTION = ['0', '1']
+
+        ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
+        game = [[1, 0, 0, 1],
+                [1, 0, 0, 1],
+                [1, 0, 0, 1],
+                [0, 1, 1, 0]]
+        ga = CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1,
+                                  history_actions=ALL_POSSIBLE_ACTIONS,
+                                  game_type=game, best_or_worst="best")
+        best = ga.solve(22)  # you can also play with max. generations
+        ga.show_individual(best[0])
+        assert best[1] >= 0.83
 
     def testTensorflow1(self):
         import tensorflow as tf
         hello = tf.constant("hello TensorFlow!")
 
     def testCHSHdeterministicStrategies(self):
-        import CHSH
+        import NonLocalGame
         evaluation_tactic = [[1, 0, 0, 1],
                              [1, 0, 0, 1],
                              [1, 0, 0, 1],
                              [0, 1, 1, 0]]
-        assert CHSH.play_deterministic(evaluation_tactic) == 0.75
+        assert NonLocalGame.play_deterministic(evaluation_tactic)[0] == 0.75
+        assert NonLocalGame.play_deterministic(evaluation_tactic)[1] == 0.25
 
     def testCHSHacc(self):
-        import CHSHv02qDiscreteStatesActions
+        import NlgDiscreteStatesActions
         naucil_sa = ['b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'biggerAngle', 'a0ry22.5', 'b1ry-22.5']
         dokopy = ['bory-135', 'a0ry45', 'b1ry-45']
 
@@ -182,7 +186,7 @@ class TestCHSH(unittest.TestCase):
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [0, 1, 1, 0]]
-        env = CHSHv02qDiscreteStatesActions.Environment(n_questions=4, evaluation_tactic=tactic, max_gates=10)
+        env = NlgDiscreteStatesActions.Environment(n_questions=4, game_type=tactic, max_gates=10)
         for a in dokopy:
             env.step(a)
 

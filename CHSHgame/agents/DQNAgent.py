@@ -7,10 +7,10 @@ from models.MLPModel import MLP
 ### The experience replay memory ###
 class ReplayBuffer:
     def __init__(self, obs_dim, act_dim, size):
-        self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float64)
-        self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float64)
+        self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float32)
+        self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float32)
         self.acts_buf = np.zeros(size, dtype=np.uint8)
-        self.rews_buf = np.zeros(size, dtype=np.float64)
+        self.rews_buf = np.zeros(size, dtype=np.float32)
         self.done_buf = np.zeros(size, dtype=np.uint8)
         self.ptr, self.size, self.max_size = 0, 0, size
 
@@ -35,9 +35,9 @@ class ReplayBuffer:
 def predict(model, np_states):
     with torch.no_grad():
         inputs = torch.from_numpy(np_states.astype(np.float32))
-        output = model(inputs)
+        output = model(inputs.to(model.device))
         # print("output:", output)
-        return output.numpy()
+        return output.cpu().numpy()
 
 
 def train_one_step(model, criterion, optimizer, inputs, targets):
@@ -49,15 +49,18 @@ def train_one_step(model, criterion, optimizer, inputs, targets):
     optimizer.zero_grad()
 
     # Forward pass
-    outputs = model(inputs)
-    loss = criterion(outputs, targets)
+    outputs = model(inputs.to(model.device))
+    loss = criterion(outputs, targets.to(model.device))
 
     # Backward and optimize
     loss.backward()
     optimizer.step()
 
 class DQNAgent(object):
-    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, ALL_POSSIBLE_ACTIONS, learning_rate, hidden_layers, hidden_dim):
+    def __init__(self, state_size, action_size, gamma, eps, eps_min, eps_decay, ALL_POSSIBLE_ACTIONS, learning_rate, hidden_layers, hidden_dim, onehot_to_action, action_to_onehot):
+        self.onehot_to_action = onehot_to_action
+        self.action_to_onehot = action_to_onehot
+
         self.state_size = state_size
         self.action_size = action_size
         self.memory = ReplayBuffer(state_size, action_size, size=500)
@@ -75,12 +78,6 @@ class DQNAgent(object):
 
     def update_replay_memory(self, state, action, reward, next_state, done):
         self.memory.store(state, action, reward, next_state, done)
-
-    # def act(self, state):
-    #     if np.random.rand() <= self.epsilon:
-    #         return np.random.choice(self.action_size)
-    #     act_values = predict(self.model, state)
-    #     return np.argmax(act_values[0])  # returns action
 
     def act(self, state):
         """ :returns action based on neural model prediction / epsilon greedy """

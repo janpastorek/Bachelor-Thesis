@@ -23,13 +23,13 @@ class LinearModel(RegressionModel):
     @override
     def predict(self, X):
         # make sure X is N x D
-        assert (len(X.shape) == 2)
+        # assert (len(X.shape) == 2)
         return X.dot(self.W) + self.b
 
     @override
     def sgd(self, X, Y, learning_rate=0.01, momentum=0.9):
         # make sure X is N x D
-        assert (len(X.shape) == 2)
+        # assert (len(X.shape) == 2)
 
         # the loss values are 2-D
         # normally we would divide by N only

@@ -155,7 +155,7 @@ print(win_rate1)
 
 # assert (win_rate==win_rate1) # test game_type DONE
 
-#     # Convert the 4 state measurement result to two 1-bit results
+#     # convert the 4 state measurement result to two 1-bit results
 #     if result == 0:
 #         s, t = False, False
 #     if result == 1:
