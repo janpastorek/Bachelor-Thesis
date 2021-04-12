@@ -173,6 +173,8 @@ class Environment(NonLocalGame.abstractEnvironment):
         try:
             result, self.repr_state = self.memory_state[tuple(self.history_actions)][:2]
         except KeyError:
+            try: result, self.repr_state, self.history_actions_anneal[:-1] = self.memory_state[tuple(self.history_actions[:-1])]
+            except: pass
             if action not in {"xxr0", "smallerAngle", "biggerAngle", "a0cxnot", "b0cxnot", "a0cxnotr", "b0cxnotr"} and self.use_annealing:
                 self.history_actions_anneal[-1] = self.history_actions_anneal[-1][:4] + str(
                     self.anneal())  # simulated annealing on the last chosen action
