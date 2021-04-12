@@ -203,9 +203,9 @@ class Environment(NonLocalGame.abstractEnvironment):
         return self.complex_array_to_real(self.repr_state), reward, done
 
     def anneal(self, steps=100, t_start=2, t_end=0.001):
-        # A function that finds the maximal value of the fitness function by
-        # executing the simulated annealing algorithm.
-        # Returns a state (e.g. x) for which fitness(x) is maximal.
+        """ Finds the maximal value of the fitness function by
+        executing the simulated annealing algorithm.
+        Returns a state (e.g. x) for which fitness(x) is maximal. """
         x = self.random_state()
         t = t_start
         for i in range(steps):
@@ -219,10 +219,12 @@ class Environment(NonLocalGame.abstractEnvironment):
         return x
 
     def fitness(self, x):
+        """ Calculates fitness of the state given by calculation of accuracy over history of actions."""
         last = [self.history_actions_anneal[-1][:4] + str(x)]
         return self.calc_accuracy(self.calculate_state(self.history_actions_anneal[:-1] + last, anneal=True))
 
     def neighbors(self, x, span=30, delta=0.1):
+        """ Creates neighboring gate angle to angle x"""
         res = []
         if x > -span + 3 * delta: res += [x - i * delta for i in range(1, 4)]
         if x < span - 3 * delta: res += [x + i * delta for i in range(1, 4)]
@@ -257,8 +259,8 @@ if __name__ == '__main__':
     ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
 
     # for xor paralel with 2EPR
-    # ALL_POSSIBLE_ACTIONS.append(["a0cxnotr"])
-    # ALL_POSSIBLE_ACTIONS.append(["b0cxnotr"])
+    ALL_POSSIBLE_ACTIONS.append(["a0cxnotr"])
+    ALL_POSSIBLE_ACTIONS.append(["b0cxnotr"])
 
     N = 4000
     n_questions = 2
@@ -270,9 +272,9 @@ if __name__ == '__main__':
     round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
     state = np.array(
-        [0 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
+        [0 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j], dtype=np.complex64)
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True,
-                      n_games=1)
+                      n_games=2)
 
     hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 

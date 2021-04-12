@@ -80,6 +80,7 @@ class abstractEnvironment(ABC):
         return self.calc_acc(result)
 
     def calc_acc(self, result):
+        """ Calculates accurary by going through rules of the game given by game_type matrix """
         win_rate = 0
         for x, riadok in enumerate(self.game_type):
             for y, stlpec in enumerate(riadok):
@@ -105,7 +106,7 @@ class abstractEnvironment(ABC):
         return new_result
 
     def paralel_non_local(self, result):
-        """ works for 2 paralel games, selects probabilities to paralel games from on"""
+        """ works for 2 paralel games, selects probabilities to paralel games """
         assert self.n_games == 2 and self.n_qubits >= 4
 
         dividing_to_paralel = dict()
@@ -385,6 +386,9 @@ import NlgGeneticOptimalization
 
 
 def quantumGEN(states, game):
+    """ Plays nonlocal game using genetic algorithm multiple -lenght(states)- times and returns the best and the worst result.
+     Works good for small nonlocal games with 1epr pair. For bigger games reinforcement learning is much better choice. """
+
     best = 0
     worst = 1
     min_state = None
@@ -426,6 +430,8 @@ def quantumGEN(states, game):
 
 
 def quantumNN(states, agent_type, which, game):
+    """ Plays nonlocal game using reinforcement learning multiple -lenght(states)- times and returns the best and the worst result. """
+
     # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
     # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
     ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
@@ -524,6 +530,7 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
 
 
 def calc_difficulty_of_game(game):
+    """ Difficulty of the input game is calculated as a sum of all 1's in the whole game (evaluation) matrix"""
     diff = 0
     for row in game:
         for x in row:
@@ -533,10 +540,13 @@ def calc_difficulty_of_game(game):
 
 
 def to_list(tuple):
+    """ converts tuple to list """
     return [list(x) for x in tuple]
 
 
 def categorize(cutGames):
+    """ categorizes input games according to the best and worst classical strategy probabilities , e.g. (0.75,0.25) is the category for
+    CHSH game, because the best possible classical strategy will give you 0.75 success probability, the worst is 0.25 classicaly."""
     categories = dict()
     for game in cutGames:
         classical_max_min = play_deterministic(game)
@@ -550,6 +560,7 @@ def categorize(cutGames):
 
 
 def convert(list):
+    """ Converts list to categories. """
     categories = dict()
     for dict_row in list:
         try:
@@ -565,6 +576,8 @@ from database import DB
 
 def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
                              n_qubits=2):
+    """ Finds interesting games by searching through the space of possible interesting games. """
+
     def playGame():
         classical_max, classical_min = play_deterministic(game_type, best_or_worst)
         quantum_max, quantum_min, min_state, max_state, min_strategy, max_strategy = play_quantum(game_type, best_or_worst,
@@ -585,7 +598,7 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
                   max_state=max_state,
                   min_strategy=min_strategy, max_strategy=max_strategy, game=game_type)
 
-    """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
+
     assert n_qubits == 2 or n_qubits == 4
     db = DB.CHSHdb()
 
