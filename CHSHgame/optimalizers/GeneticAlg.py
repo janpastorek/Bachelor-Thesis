@@ -77,7 +77,9 @@ class GeneticAlg(ABC):
 
             # najdem najlepsieho, ci uz nieje v cieli, a zaroven vysortujem populaciu na polku
             # print(self.population)
-            sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=True)
+            try: sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=self.best_or_worst == "best")
+            except: sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=True)
+
             najlepsi_zatial = self.fitness(sort_population[0])
             self.for_plot.append(najlepsi_zatial)
 
@@ -106,7 +108,6 @@ class GeneticAlg(ABC):
             # mutacie a skrizenie
             deti = []
             for i in range(len(self.population)):
-
                 x = random.choice(self.population)  # rodicia
                 y = random.choice(self.population)
 
@@ -117,7 +118,8 @@ class GeneticAlg(ABC):
                     deti.append(potomok)
 
             # necham len tu najlepsiu polovicu deti
-            sort_deti = sorted(deti, key=lambda x: self.fitness(x), reverse=True)
+            try: sort_deti = sorted(deti, key=lambda x: self.fitness(x), reverse=self.best_or_worst == "best")
+            except: sort_deti = sorted(deti, key=lambda x: self.fitness(x), reverse=True)
 
             # tu uz dotvaram novu generaciu teda polka rodicov a polka deti
             polka = len(sort_deti) // 2
@@ -125,7 +127,9 @@ class GeneticAlg(ABC):
             for i in deti:
                 self.population.append(i)  # tu uz dotvaram celkovu novu generaciu
 
-        sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=True)
+        try: sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=self.best_or_worst == "best")
+        except:  sort_population = sorted(self.population, key=lambda x: self.fitness(x), reverse=True)
+
         najlepsi = sort_population[0]
         self.for_plot.append(self.fitness(najlepsi))
         return najlepsi

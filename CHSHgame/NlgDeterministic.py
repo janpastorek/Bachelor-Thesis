@@ -1,15 +1,16 @@
 import itertools
 
-import CHSH
+import NonLocalGame
 
 
-class Environment(CHSH.abstractEnvironment):
+class Environment(NonLocalGame.abstractEnvironment):
     """ creates CHSH for classic deterministic strategies"""
 
     def __init__(self, game_type, num_players=2, n_questions=2):
         self.num_players = num_players
         self.n_questions = n_questions
         self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
+
         # self.a = []
         # self.b = []
         # for x in range(2):
@@ -25,13 +26,13 @@ class Environment(CHSH.abstractEnvironment):
 
         self.responses = list(
             itertools.product(list(range(n_questions)),
-                              repeat=self.num_players))  # TODO: je to spravne?
+                              repeat=self.num_players))
 
-    @CHSH.override
+    @NonLocalGame.override
     def reset(self):
         return
 
-    @CHSH.override
+    @NonLocalGame.override
     def step(self, action):
         return
 
@@ -85,3 +86,13 @@ class Environment(CHSH.abstractEnvironment):
 
         # print(accuracies)
         return max(accuracies), min(accuracies)
+
+
+if __name__ == '__main__':
+    game_type = [[0, 1, 1, 1],
+                 [0, 1, 0, 0],
+                 [1, 0, 1, 0],
+                 [1, 0, 0, 0]]
+
+    env = Environment(game_type, 2,2)
+    print(env.play_all_strategies())
