@@ -241,8 +241,8 @@ if __name__ == '__main__':
     # Hyperparameters setting
     # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
     # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
-    # ACTIONS2 = [q + axis + "0" for axis in 'xyz' for q in 'ra']
-    ACTIONS2 = [q + axis + "0" for axis in 'y' for q in 'r']
+    ACTIONS2 = [q + axis + "0" for axis in 'xyz' for q in 'ra']
+    # ACTIONS2 = [q + axis + "0" for axis in 'y' for q in 'r']
     # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
@@ -253,8 +253,8 @@ if __name__ == '__main__':
     # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
 
     # for 1 game with 2 EPR
-    # ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
-    # ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
+    ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
+    ALL_POSSIBLE_ACTIONS.append(["b0cxnot"])
 
     # for xor paralel with 2EPR
     # ALL_POSSIBLE_ACTIONS.append(["a0cxnotr"])
@@ -269,8 +269,8 @@ if __name__ == '__main__':
     max_gates = 10
     round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
-    # state = np.array(
-        # [0 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
+    state = np.array(
+        [0 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j])
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True,
                       n_games=1)
 
