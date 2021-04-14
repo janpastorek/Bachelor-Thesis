@@ -107,11 +107,10 @@ class Environment(NonLocalGame.abstractEnvironment):
                 operation = []
 
                 if gate == CXGate:
-                    if to_whom in 'a0a1':
-                        ctrl = int(action[-1] != "r")
+                    ctrl = int(action[-1] != "r")
+                    if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
                         operation = np.kron(CXGate(ctrl_state=ctrl).to_matrix(), np.identity(I_length))
-                    elif to_whom in 'b0b1':
-                        ctrl = int(action[-1] == "r")
+                    if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
                         operation = np.kron(np.identity(I_length), CXGate(ctrl_state=ctrl).to_matrix())
                 else:
                     if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
@@ -148,8 +147,8 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         if self.accuracy < self.min_acc:
             self.min_acc = self.accuracy
-            self.max_found_state = self.repr_state.copy()
-            self.max_found_strategy = self.history_actions_anneal.copy()
+            self.min_found_state = self.repr_state.copy()
+            self.min_found_strategy = self.history_actions_anneal.copy()
 
         elif self.accuracy == self.min_acc:
             if len(self.history_actions) < len(self.min_found_strategy):
@@ -198,7 +197,10 @@ class Environment(NonLocalGame.abstractEnvironment):
 
         self.save_interesting_strategies()
 
-        if self.counter == self.max_gates or action == 'xxr0': done = True
+        if self.counter == self.max_gates or action == 'xxr0':
+            print("state: ", self.repr_state)
+            done = True
+
         if not done: self.counter += 1
         return self.complex_array_to_real(self.repr_state), reward, done
 
@@ -272,7 +274,7 @@ if __name__ == '__main__':
     round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
     state = np.array(
-        [0 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j], dtype=np.complex64)
+        [ 0+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, 0+0j ], dtype=np.complex64)
     env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True,
                       n_games=2)
 

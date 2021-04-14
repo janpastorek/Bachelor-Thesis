@@ -18,6 +18,9 @@ class Environment(NonLocalGame.abstractEnvironment):
         #         self.a.append(x)
         #         self.b.append(y)
 
+        self.n_games = 1
+        self.n_qubits = 0
+
         self.game_type = game_type
 
         self.possible_answers = dict()

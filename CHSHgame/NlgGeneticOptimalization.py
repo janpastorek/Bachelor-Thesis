@@ -27,8 +27,11 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
         self.mutation_prob = mutation_prob
         self.num_players = num_players
         self.initial = state
+        self.state = self.initial.copy()
         self.game_type = game_type
         self.n_games = 1
+
+        self.n_qubits = self.n_qubits_from_state()
 
         self.reset(history_actions, n_crossover)
 

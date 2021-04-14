@@ -74,10 +74,8 @@ class abstractEnvironment(ABC):
 
     def calc_accuracy(self, result):
         """ :returns winning accuracy / win rate based on winning game_type """
-        if self.n_games == 1:
-            result = self.EPR_result(result)
-        else: return self.paralel_non_local(result)
-        return self.calc_acc(result)
+        if self.n_games == 1: return self.calc_acc(self.EPR_result(result))
+        return self.paralel_non_local(result)
 
     def calc_acc(self, result):
         """ Calculates accurary by going through rules of the game given by game_type matrix """
@@ -91,17 +89,21 @@ class abstractEnvironment(ABC):
     def EPR_result(self, result):
         """ If state is bigger than with 2 qubits, we must reduce state so that it matches the scale of the game.
         This functions reduces bigger states result to smaller one by taking the first bit. """
-        if self.n_qubits == 2: return result
+        if self.n_qubits <= 2: return result
 
         new_result = []
         for r, row in enumerate(result):
             new_result.append([])
             for c in range(0, len(row), self.reduce_by * 2):
+                # TODO: Skontrolovat ci to funguje spravne
                 new_result[r].append(
-                    sum(result[r][c:(c + self.reduce_by // 2)]) + sum(result[r][c + self.reduce_by:(c + self.reduce_by + self.reduce_by // 2)]))
+                    sum(result[r][c:(c + self.reduce_by // 2)]) +
+                    sum(result[r][c + self.reduce_by:(c + self.reduce_by + self.reduce_by // 2)])
+                )
                 new_result[r].append(
-                    sum(result[r][(c + self.reduce_by // 2): c + self.reduce_by]) + sum(
-                        result[r][(c + self.reduce_by + self.reduce_by // 2):(c + self.reduce_by * 2)]))
+                    sum(result[r][(c + self.reduce_by // 2): c + self.reduce_by]) +
+                    sum(result[r][(c + self.reduce_by + self.reduce_by // 2):(c + self.reduce_by * 2)])
+                    )
 
         return new_result
 
@@ -112,7 +114,7 @@ class abstractEnvironment(ABC):
         dividing_to_paralel = dict()
         for state in result:
             for x in range(len(state)):
-                dividing_to_paralel[self.possible_states[x]] = self.state[x]
+                dividing_to_paralel[self.possible_states[x]] = state[x]
 
         new_result_1 = []
         new_result_2 = []
@@ -120,6 +122,7 @@ class abstractEnvironment(ABC):
             paralel_1 = dict()
             paralel_2 = dict()
             for key in dividing_to_paralel.keys():
+                # TODO: Skontrolovat ci to funguje spravne
                 try: paralel_1[str(key[0]) + str(key[2])] += dividing_to_paralel[key]
                 except KeyError: paralel_1[str(key[0]) + str(key[2])] = dividing_to_paralel[key]
                 try: paralel_2[str(key[1]) + str(key[3])] += dividing_to_paralel[key]
@@ -128,7 +131,7 @@ class abstractEnvironment(ABC):
             new_result_1.append(list(paralel_1.values()))
             new_result_2.append(list(paralel_2.values()))
 
-        return float(self.calc_acc(new_result_1) * self.calc_acc(new_result_2))
+        return self.calc_acc(new_result_1) * self.calc_acc(new_result_2)
 
     def n_qubits_from_state(self):
         """ There are 2^n states of n qubits, to get the n, we need to make log2 from state"""
@@ -141,8 +144,8 @@ class abstractEnvironment(ABC):
         for action in self.history_actions:
             if action in {"xxr0"}:  # ending action
                 pass
-            elif action in {"smallerAngle", "biggerAngle"}:
-                count += 0.5
+            # elif action in {"smallerAngle", "biggerAngle"}:
+            #     count += 0.5
             else:
                 count += 1
 
