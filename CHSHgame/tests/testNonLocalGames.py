@@ -12,7 +12,7 @@ class TestCHSH(unittest.TestCase):
         assert (np.around(RYGate((0 * pi / 180)).to_matrix(), 5).all() == np.eye(2).all())
 
     def testIfCorrectStrategyAndAccuracy(self):
-        n_questions = 4
+        n_questions = 2
         tactic = [[1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
@@ -197,7 +197,7 @@ class TestCHSH(unittest.TestCase):
         assert NonLocalGame.play_deterministic(evaluation_tactic)[0] == 0.75
         assert NonLocalGame.play_deterministic(evaluation_tactic)[1] == 0.25
 
-    def testCHSHacc(self):
+    def testCHSHaccLearnt(self):
         import NlgDiscreteStatesActions
         naucil_sa = ['b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'biggerAngle', 'a0ry22.5', 'b1ry-22.5']
         dokopy = ['b0ry-135', 'a0ry45', 'b1ry-45']
@@ -206,12 +206,31 @@ class TestCHSH(unittest.TestCase):
                   [1, 0, 0, 1],
                   [1, 0, 0, 1],
                   [0, 1, 1, 0]]
-        env = NlgDiscreteStatesActions.Environment(n_questions=4, game_type=tactic, max_gates=10)
-        for a in dokopy:
-            env.step(a)
+        env = NlgDiscreteStatesActions.Environment(n_questions=2, game_type=tactic, max_gates=10)
 
-        print(env.accuracy)
-        assert env.accuracy < 0.86
+        result = env.calculate_state(dokopy, False)
+
+        acc = env.calc_accuracy(result)
+        print(acc)
+        assert np.round(acc, 2) < 0.85
+
+
+    def testCHSHaccOptimal(self):
+        import NlgDiscreteStatesActions
+        naucil_sa = ['b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'b0ry-22.5', 'biggerAngle', 'a0ry22.5', 'b1ry-22.5']
+        dokopy = ['b0ry-135', 'a0ry90', 'b1ry-45']
+
+        tactic = [[1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [0, 1, 1, 0]]
+        env = NlgDiscreteStatesActions.Environment(n_questions=2, game_type=tactic, max_gates=10)
+
+        result = env.calculate_state(dokopy, False)
+
+        acc = env.calc_accuracy(result)
+        print(acc)
+        assert np.round(acc,2) == 0.85
 
     def testCHSH2epr(self):
         import NlgDiscreteStatesActions
@@ -228,6 +247,22 @@ class TestCHSH(unittest.TestCase):
         env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True,
                           n_games=1)
         assert np.round(env.accuracy,2) == 0.5
+
+
+    def testCHSH2eprParalelstartacc(self):
+        import NlgDiscreteStatesActions
+
+        max_gates = 10
+        n_questions = 2
+        game_type = [[1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [1, 0, 0, 1],
+                  [0, 1, 1, 0]]
+        state = np.array(
+            [ 0+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, 0+0j ], dtype=np.complex64)
+        env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True,
+                          n_games=2)
+        assert np.round(env.accuracy,4) == 0.0625
 
 
 

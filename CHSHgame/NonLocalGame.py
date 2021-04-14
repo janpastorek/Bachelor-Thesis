@@ -275,6 +275,7 @@ class Game:
             rew_accum += reward
         try: print(env.memory_state[tuple(env.history_actions)][2])
         except: print(env.history_actions)
+        # print("state: ", env.repr_state)
         return env.accuracy, rew_accum
 
     def evaluate_train(self, N, agent, env):
