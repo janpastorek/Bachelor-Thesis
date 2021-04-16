@@ -54,22 +54,6 @@ class Environment(NonLocalGame.abstractEnvironment):
         """ plays 16 different strategies,evaluate each and :returns: the best accuracy from all strategies """
         accuracies = []
         result = []
-        # for a in range(len(self.possible_answers)):
-        #     for b in range(len(self.possible_answers)):
-        #         for q in range(len(self.game_type)):
-        #             question = [self.a[q], self.b[q]]
-        #             result.append(self.evaluate(question, (a, b)))
-        #         accuracies.append(self.calc_accuracy(result))
-        #         result = []
-
-        # # TODO: toto treba checknut ci je to ok ?!
-        # for r_A in self.responses:
-        #     for r_B in self.responses:
-        #                 for x, question in enumerate(self.questions):
-        #                     response_to_this_question = r_A[question[0]], r_B[question[1]]
-        #                     result.append(self.evaluate(question, response_to_this_question))
-        #                 accuracies.append(self.calc_accuracy(result))
-        #                 result = []
 
 
         response_list = self.response_rek(self.n_questions)
@@ -80,18 +64,6 @@ class Environment(NonLocalGame.abstractEnvironment):
             accuracies.append(self.calc_accuracy(result))
             result = []
 
-        # for q in range(len(self.game_type)):
-        #     question = [self.a[q], self.b[q]]
-        #     for a in self.possible_answers[question[0]]:
-        #         self.possible_answers[question[0]] = a
-        #         for b in self.possible_answers[question[1]]:
-        #             self.possible_answers[question[1]] = b
-        #             result.append(self.evaluate(question, (a, b)))
-        #
-        #     accuracies.append(self.calc_accuracy(result))
-        #     result = []
-
-        # print(accuracies)
         return max(accuracies), min(accuracies)
 
     def response_rek(self, n):
@@ -103,8 +75,8 @@ class Environment(NonLocalGame.abstractEnvironment):
 
 
 
-def rule(a, b, s, t):
-    return (a and b) == (s != t)
+def rule(a, b, x, y):
+    return (a != b) == (x and y)
 
 
 def create(game_type):
