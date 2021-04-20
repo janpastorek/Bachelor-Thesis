@@ -126,7 +126,11 @@ Optimalization of quantum strategies for non-local CHSH games via machine learni
 <li> Škálovanie hry pre 2xEPR páry pre XOR paralelne CHSH hry </li>
 <li> Študoval som teóriu zložitostí, nelokálne hry = trieda zložitostí MIP*, pretože mám o tom jednu podkapitolu </li>
 <li> Dopísal som kapitoly Nonlocal games a Reinforcement learning </li>
-<li> Pracoval som na kapito</li>
+</ul>
+      <li> 13.4 - 20.4 </li>
+<ul>
+<li> Refactoring a dokumentácia kódu </li>
+<li> Postupne opisujem implementaciu </li>
 </ul>
 </ul>
 </details>
