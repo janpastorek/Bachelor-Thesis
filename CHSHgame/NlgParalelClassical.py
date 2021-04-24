@@ -1,6 +1,6 @@
 """
 evaluating classical strategies for N parallel CHSH games
-Daniel Nagaj
+inspired by Daniel Nagaj's solution, added memoization and C libraries + encapsulation and abstracion
 """
 
 import itertools
@@ -168,8 +168,6 @@ if __name__ == '__main__':
     # for N=3, she needs to decide on answers to 000, 001, 010, 011, ..., 111
     #                   the answers have length 3 (8 possible answers in each)
     #                    8^8 = 2^24 = 16777216 strategies
-
-
 
     # the best 1-round strategy gives 0.75 = 3/4
     # see it here:

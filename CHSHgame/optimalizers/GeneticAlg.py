@@ -92,7 +92,7 @@ class GeneticAlg(ABC):
             polka = len(sort_population) // 2
             self.population = sort_population[:polka]  # treba zakomentovat ak ideme pouzit tournament selection
 
-            # BONUS tournament selection   - treba zakomentovat riadok nad tymto a odkomentovat pod tymto
+            # tournament selection   - comment the row above and uncomment rows below
 
             ##            novy = []
             ##            for x in range(polka):

@@ -7,13 +7,14 @@ from agents.BasicAgent import BasicAgent
 from agents.DQNAgent import DQNAgent
 from models.LinearModel import LinearModel
 from optimalizers.GeneticAlg import GeneticAlg
+from sklearn.preprocessing import OneHotEncoder
 
 
 class HyperParamCHSHOptimizer(GeneticAlg):
     """ Works only for DiscreteStatesActions.Environment because of different init parameters """
 
     def __init__(self, population_size=15, n_crossover=3, mutation_prob=0.05, game_type=None, CHSH=None,
-                 max_gates=10, n_questions=4, ALL_POSSIBLE_ACTIONS=None, agent_type=BasicAgent):
+                 max_gates=10, n_questions=2, ALL_POSSIBLE_ACTIONS=None, agent_type=BasicAgent, best_or_worst="best"):
         # Initialize the population - create population of 'size' individuals,
         # each individual is a bit string of length 'word_len'.
         self.population_size = population_size
@@ -28,13 +29,13 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         self.n_questions = n_questions
         self.ALL_POSSIBLE_ACTIONS = ALL_POSSIBLE_ACTIONS
 
+        self.best_or_worst = best_or_worst
         self.agent_type = agent_type
 
     @override
     def generate_individual(self):
         # Generate random individual.
-        # To be implemented in subclasses
-        # tieto hyperparametre treba optimalizovat
+        # Parameters to be optimalized.
         GAMMA = [1, 0.9, 0.5, 0.1, 0]
         MOMENTUM = [0.9, 0.85, 0.5]
         ALPHA = [1, 0.1, 0.01, 0.001]
@@ -44,12 +45,14 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         N_EPISODES = [2000, 3000, 4000]
         HIDDEN_LAYERS = [[20, 20], [20], [30, 30], [30, 30, 30]]
         BATCH_SIZE = [32, 64, 128, 256]
+        reward_functions = [f for name, f in NonLocalGame.abstractEnvironment.__dict__.items()
+                            if callable(f) and "reward" in name]
 
-        functions = [f for name, f in NonLocalGame.abstractEnvironment.__dict__.items() if callable(f) and "reward" in name]
-
-        return [random.choice(GAMMA), random.choice(EPS), random.choice(EPS_MIN), random.choice(EPS_DECAY),
-                random.choice(MOMENTUM), random.choice(ALPHA), random.choice(N_EPISODES), random.choice(HIDDEN_LAYERS), random.choice(functions),
-                random.choice(BATCH_SIZE)]
+        return [random.choice(GAMMA), random.choice(EPS),
+                random.choice(EPS_MIN), random.choice(EPS_DECAY),
+                random.choice(MOMENTUM), random.choice(ALPHA),
+                random.choice(N_EPISODES), random.choice(HIDDEN_LAYERS),
+                random.choice(reward_functions),  random.choice(BATCH_SIZE)]
 
     @override
     def fitness(self, x):
@@ -57,7 +60,7 @@ class HyperParamCHSHOptimizer(GeneticAlg):
         # To be implemented in subclasses
         N = math.floor(x[-4])
 
-        env = self.CHSH(self.n_questions, self.game_type, self.max_gates, reward_function=x[-2])
+        env = self.CHSH(self.n_questions, self.game_type, self.max_gates, reward_function=x[-2], anneal=True)
 
         if self.agent_type == BasicAgent:
             agent = BasicAgent(state_size=len(env.repr_state), action_size=len(self.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
@@ -66,10 +69,20 @@ class HyperParamCHSHOptimizer(GeneticAlg):
             scaler = get_scaler(env, N, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS)
 
         else:
+            # transform actions to noncorellated encoding
+            encoder = OneHotEncoder(drop='first', sparse=False)
+            # transform data
+            onehot = encoder.fit_transform(ALL_POSSIBLE_ACTIONS)
+            onehot_to_action = dict()
+            action_to_onehot = dict()
+            for a, a_encoded in enumerate(onehot):
+                onehot_to_action[str(a_encoded)] = a
+                action_to_onehot[a] = str(a_encoded)
+
             HIDDEN_LAYERS = x[-3]
-            agent = DQNAgent(state_size=len(env.repr_state), action_size=len(self.ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
+            agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=x[0], eps=x[1], eps_min=x[2],
                              eps_decay=x[3], ALL_POSSIBLE_ACTIONS=self.ALL_POSSIBLE_ACTIONS, learning_rate=x[4], hidden_layers=len(HIDDEN_LAYERS),
-                             hidden_dim=HIDDEN_LAYERS)
+                             hidden_dim=HIDDEN_LAYERS, onehot_to_action=onehot_to_action, action_to_onehot=action_to_onehot)
             scaler = None
 
         game = Game(scaler, batch_size=x[-1])
@@ -119,19 +132,12 @@ class HyperParamCHSHOptimizer(GeneticAlg):
 
 if __name__ == "__main__":
     # Hyperparameters setting
-    ACTIONS2 = ['r' + axis + str(180 / 16 * i) for i in range(1, 9) for axis in 'y']
-    ACTIONS = ['r' + axis + str(-180 / 16 * i) for i in range(1, 9) for axis in 'y']
-    ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+    ACTIONS = [q + axis + "0" for axis in 'xyz' for q in 'ra']
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
-    ALL_POSSIBLE_ACTIONS.append("xxr0")
-    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
-    # ALL_POSSIBLE_ACTIONS.append("a0cxnot")
-    # ALL_POSSIBLE_ACTIONS.append("b0cxnot")
-    # ALL_POSSIBLE_ACTIONS.append("cnot")  # can be used only when state is bigger than 4
+    ALL_POSSIBLE_ACTIONS = [[p + q + a] for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS.append(["xxr0"])
 
     ## Solve to find optimal individual
     from NlgDiscreteStatesActions import Environment

@@ -110,7 +110,7 @@ state = [1 / sqrt(2), 0, 0, 1 / sqrt(2)]
 result = []
 for i in range(4):
     # Alice and Bob share an entangled state
-    state = QuantumState([1 / sqrt(2), 0, 0, 1 / sqrt(2)])
+    state = QuantumState([0,1 / sqrt(2),-1 / sqrt(2),0 ])
 
     # The input to alice and bob is random
     # Alice chooses her operation based on her input

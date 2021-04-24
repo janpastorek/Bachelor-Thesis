@@ -17,64 +17,61 @@ class Environment(NonLocalGame.abstractEnvironment):
     def __init__(self, n_questions, game_type, max_gates, n_players=2,
                  initial_state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64), best_or_worst="best", reward_function=None,
                  anneal=False, n_games=1):
-        self.n_games = n_games
+        self.n_games = n_games  # how many games are to be played (paralel)
+        self.n_questions = n_questions  # how many atomic questions (to one player)
+        self.n_players = n_players # players / verifiers
+        self.counter = 1   # number of steps
+        self.history_actions = []  # history of actions taken
+        self.history_actions_anneal = [] # history of action annealed taken
 
-        self.n_questions = n_questions
-        self.n_players = n_players
-        self.counter = 1
-        self.history_actions = []
-        self.history_actions_anneal = []
-
-        self.max_gates = max_gates
+        self.max_gates = max_gates # limit of gates that can be taken
         self.min_gates = 0
-        self.game_type = game_type
-        self.initial_state = initial_state
+        self.game_type = game_type  # game matrix (rules - when do they win)
+        self.initial_state = initial_state  # initial state
         self.state = self.initial_state.copy()
 
         self.n_qubits = self.n_qubits_from_state()
-        self.reduce_by = 2 ** (self.n_qubits - 2)
+        self.reduce_by = 2 ** (self.n_qubits - 2)  # reducing for double games
 
-        self.possible_states = list(
+        self.possible_states = list(   # possible states
             itertools.product(list(range(self.n_questions)),
                               repeat=self.n_qubits))
 
-        self.one_game_answers = list(
+        self.one_game_answers = list(  # possible answers
             itertools.product(list(range(self.n_questions)),
                               repeat=self.n_players))
 
-        self.repr_state = np.array([x for _ in range(self.n_players ** 2) for x in self.state], dtype=np.complex64)
+        self.repr_state = np.array([x for _ in range(len(self.game_type)) for x in self.state], dtype=np.complex64) # state representation for all comb. of questions
 
         self.state_size = len(self.repr_state) * 2  # times 2 because of complex array to array of real numbers
 
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions * self.n_players)])
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(len(self.game_type))]) # winning probability
         self.max_acc = self.accuracy
         self.min_acc = self.accuracy
 
-        self.max_found_state = self.repr_state.copy()
+        self.max_found_state = self.repr_state.copy()   # best / worst found configurations
         self.max_found_strategy = []
         self.min_found_state = self.repr_state.copy()
         self.min_found_strategy = []
         self.best_or_worst = best_or_worst
 
-        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.n_players))
+        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.n_players*self.n_games)) # combinations of questions
         print(self.questions)
-        self.memory_state = dict()
-        self.velocity = 1
+        self.memory_state = dict() # memoization of calculation, repr_state, accuracies
         self.reward_funcion = reward_function
         if self.reward_funcion == None: self.reward_funcion = self.reward_only_difference
 
         self.immutable = {"xxr0", "smallerAngle", "biggerAngle", "a0cxnot", "b0cxnot", "a0cxnotr", "b0cxnotr"}
 
-        self.use_annealing = anneal
+        self.use_annealing = anneal # do you want to use annealing?
 
     @NonLocalGame.override
     def reset(self):
-        self.velocity = 1
         self.history_actions_anneal = []
         return self.complex_array_to_real(super().reset())  # + np.array([len(self.history_actions)], dtype=np.float64)
 
     def calculate_state(self, history_actions, anneal=False):
-        """ Calculates the state according to previous actions"""
+        """ Calculates the state according to previous actions in parameter history_actions """
         result = []
 
         for g, q in enumerate(self.questions):
@@ -83,7 +80,6 @@ class Environment(NonLocalGame.abstractEnvironment):
             # Alice chooses her operation based on her input, Bob too - eg. a0 if alice gets 0 as input
 
             self.state = self.initial_state.copy()
-            self.velocity = 1
 
             for action in history_actions:
                 # get info from action
@@ -99,7 +95,7 @@ class Environment(NonLocalGame.abstractEnvironment):
                 if gate == IGate: continue
                 to_whom = action[0:2]
                 rotate_ancilla = action[2] == 'a'
-                try: gate_angle = np.array([action[4:]], dtype=np.float32) * self.velocity
+                try: gate_angle = np.array([action[4:]], dtype=np.float32)
                 except ValueError: gate_angle = 0
 
                 I_length = int(len(self.initial_state) ** (1 / self.n_players))
@@ -239,21 +235,17 @@ import warnings
 
 warnings.filterwarnings('ignore')
 from NonLocalGame import show_plot_of
+from NlgDeterministic import create
 
 if __name__ == '__main__':
     # Hyperparameters setting
-    # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
-    # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
-    # ACTIONS2 = [q + axis + "0" for axis in 'xyz' for q in 'ra']
-    ACTIONS2 = [q + axis + "0" for axis in 'y' for q in 'r']
-    # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+    # ACTIONS = [q + axis + "0" for axis in 'xyz' for q in 'ra']
+    ACTIONS = [q + axis + "0" for axis in 'y' for q in 'r']
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [[p + q + a] for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
+    ALL_POSSIBLE_ACTIONS = [[p + q + a] for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
     ALL_POSSIBLE_ACTIONS.append(["xxr0"])
-    # ALL_POSSIBLE_ACTIONS.append("smallerAngle")
-    # ALL_POSSIBLE_ACTIONS.append("biggerAngle")
 
     # # for 1 game with 2 EPR
     # ALL_POSSIBLE_ACTIONS.append(["a0cxnot"])
@@ -269,45 +261,42 @@ if __name__ == '__main__':
                  [1, 0, 0, 1],
                  [1, 0, 0, 1],
                  [0, 1, 1, 0]]
+
     max_gates = 10
     round_to = 6
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
-    # state = np.array(
-    #     [0 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, -0.5 + 0j, 0 + 0j, 0 + 0j, 0.5 + 0j, 0 + 0j, 0 + 0j, 0 + 0j],
-    #     dtype=np.complex64)
-    env = Environment(n_questions, game_type, max_gates, initial_state=state, reward_function=Environment.reward_only_difference, anneal=True,
-                      n_games=1)
+    env = Environment(n_questions, game_type, max_gates, initial_state=state,
+                      reward_function=Environment.reward_only_difference,
+                      anneal=True, n_games=1)
 
-    hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
 
-    # (state_size, action_size, gamma, eps, eps_min, eps_decay, alpha, momentum)
-    # agent = BasicAgent(state_size=len(env.repr_state), action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
-    #                    eps_decay=0.9995, alpha=0.001, momentum=0.9, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS,
-    #                    model_type=LinearModel)
 
-    # define one hot encoding
+    # transform actions to noncorellated encoding
     encoder = OneHotEncoder(drop='first', sparse=False)
     # transform data
     onehot = encoder.fit_transform(ALL_POSSIBLE_ACTIONS)
-
     onehot_to_action = dict()
     action_to_onehot = dict()
     for x, a_encoded in enumerate(onehot):
         onehot_to_action[str(a_encoded)] = x
         action_to_onehot[x] = str(a_encoded)
 
+    hidden_dim = [len(env.repr_state) * 2, len(env.repr_state) * 2, len(env.repr_state) // 2, len(env.repr_state)]
     agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
                      eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
                      hidden_dim=hidden_dim, onehot_to_action=onehot_to_action, action_to_onehot=action_to_onehot)
-
-    # scaler = get_scaler(env, N**2, ALL_POSSIBLE_ACTIONS, round_to=round_to)
-    # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.
-    # The number of epochs can be set to an integer value between one and infinity.
+    # divide data by
     batch_size = 128
 
-    # store the final value of the portfolio (end of episode)
     game = Game(round_to=round_to, batch_size=batch_size)
     portfolio_value, rewards = game.evaluate_train(N, agent, env)
+
+    # agent = DQNAgent(state_size=env.state_size, action_size=len(ALL_POSSIBLE_ACTIONS), gamma=1, eps=1, eps_min=0.01,
+    #                  eps_decay=0.9998, ALL_POSSIBLE_ACTIONS=ALL_POSSIBLE_ACTIONS, learning_rate=0.001, hidden_layers=len(hidden_dim),
+    #                  hidden_dim=hidden_dim, onehot_to_action=onehot_to_action, action_to_onehot=action_to_onehot)
+
+    # The size of a batch must be more than or equal to one and less than or equal to the number of samples in the training dataset.
+
 
     # plot relevant information
     show_plot_of(rewards, "reward")

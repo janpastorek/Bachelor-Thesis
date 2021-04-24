@@ -4,7 +4,7 @@ import NonLocalGame
 
 
 class Environment(NonLocalGame.abstractEnvironment):
-    """ creates CHSH for classic deterministic strategies"""
+    """ creates CHSH for classic deterministic strategies, works small for 4x4 games """
 
     def __init__(self, game_type, num_players=2, n_questions=2):
         self.num_players = num_players
@@ -36,17 +36,15 @@ class Environment(NonLocalGame.abstractEnvironment):
         """ :returns index of response so that it can be mapped to state"""
         counter = 0
         for r in self.responses:
-            if list(r) == response:
-                return counter
+            if r == response:
+                break
             counter += 1
-        return
+        return counter
 
     def evaluate(self, question, response):
         """ :returns winning accuracy to input question based on response """
         self.state = [0 for _ in range(len(self.game_type))]
-        # answer = (self.possible_answers[question[0]][response[0]], self.possible_answers[question[1]][response[1]])
-
-        answer = [self.possible_answers[question[i]][response[i]] for i in range(len(response))]
+        answer = (self.possible_answers[question[0]][response[0]], self.possible_answers[question[1]][response[1]])
         self.state[self.index(answer)] = 1
         return self.measure_analytic()
 
@@ -57,12 +55,13 @@ class Environment(NonLocalGame.abstractEnvironment):
 
 
         response_list = self.response_rek(self.n_questions)
-        for r in  self.response_rek(self.n_questions, response_list):
-            for x, question in enumerate(self.questions):
-                response_to_this_question = [response_list.__next__()[question[i]] for i in range(self.n_questions)]
-                result.append(self.evaluate(question, response_to_this_question))
-            accuracies.append(self.calc_accuracy(result))
-            result = []
+        for r_A in self.responses:
+            for r_B in self.responses:
+                for x, question in enumerate(self.questions):
+                    response_to_this_question = r_A[question[0]], r_B[question[1]]
+                    result.append(self.evaluate(question, response_to_this_question))
+                accuracies.append(self.calc_accuracy(result))
+                result = []
 
         return max(accuracies), min(accuracies)
 
@@ -86,7 +85,7 @@ def create(game_type):
             for y2, riadok2 in enumerate(game_type):
             # for x1, cell1 in enumerate(riadok1):
                 for x2, cell2 in enumerate(riadok2):
-                    if (cell1 == cell2 and cell1 == 1): game[y1 * y2][x1 * x2] = 1  # TODO: ma tu byt cell1 == 1?
+                    if (cell1 == cell2 and cell1 == 1): game[y1 * y2][x1 * x2] = 1
     return game
 
 
@@ -96,10 +95,4 @@ if __name__ == '__main__':
                  [1, 0, 0, 1],
                  [0, 1, 1, 0]]
     env = Environment(game_type, 2, 2)
-    print(env.play_all_strategies())
-
-    env = Environment(create(game_type), 2, 4)
-
-    print(env.questions)
-
     print(env.play_all_strategies())
