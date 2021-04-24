@@ -27,8 +27,11 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
         self.mutation_prob = mutation_prob
         self.num_players = num_players
         self.initial = state
+        self.state = self.initial.copy()
         self.game_type = game_type
         self.n_games = 1
+
+        self.n_qubits = self.n_qubits_from_state()
 
         self.reset(history_actions, n_crossover)
 
@@ -137,16 +140,15 @@ class CHSHgeneticOptimizer(GeneticAlg, abstractEnvironment):
 
 if __name__ == "__main__":
     # Solve to find optimal individual
-    ACTIONS2 = ['r' + axis + "0" for axis in 'y']
-    # ACTIONS2.extend(ACTIONS)  # complexne gaty zatial neural network cez sklearn nedokaze , cize S, T, Y
+    ACTIONS = ['r' + axis + "0" for axis in 'y']
     PERSON = ['a', 'b']
     QUESTION = ['0', '1']
 
-    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS2]  # place one gate at some place
-    game = [[0, 0, 1, 0],
-            [1, 1, 0, 0],
-            [0, 0, 1, 1],
-            [1, 1, 0, 0]]
+    ALL_POSSIBLE_ACTIONS = [p + q + a for p in PERSON for q in QUESTION for a in ACTIONS]  # place one gate at some place
+    game = [[1, 0, 0, 1],
+            [1, 0, 0, 1],
+            [1, 0, 0, 1],
+            [0, 1, 1, 0]]
     ga = CHSHgeneticOptimizer(population_size=30, n_crossover=len(ALL_POSSIBLE_ACTIONS) - 1, mutation_prob=0.1, history_actions=ALL_POSSIBLE_ACTIONS,
                               game_type=game, best_or_worst="best", state=np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex128))
     best = ga.solve(22)  # you can also play with max. generations

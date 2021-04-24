@@ -37,7 +37,7 @@ class BasicAgent:
         target_full = self.model.predict(state)
         target_full[0, action] = target
 
-        # Run one training step
+        # Run one training step using SGD - stochastic gradient descend
         self.model.sgd(state, target_full, self.alpha, self.momentum)
 
         if self.epsilon > self.epsilon_min:

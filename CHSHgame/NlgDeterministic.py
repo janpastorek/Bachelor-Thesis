@@ -4,19 +4,15 @@ import NonLocalGame
 
 
 class Environment(NonLocalGame.abstractEnvironment):
-    """ creates CHSH for classic deterministic strategies"""
+    """ creates CHSH for classic deterministic strategies, works small for 4x4 games """
 
     def __init__(self, game_type, num_players=2, n_questions=2):
         self.num_players = num_players
         self.n_questions = n_questions
-        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.num_players))
+        self.questions = list(itertools.product(list(range(2)), repeat=self.num_players * self.n_questions // 2))
 
-        # self.a = []
-        # self.b = []
-        # for x in range(2):
-        #     for y in range(2):
-        #         self.a.append(x)
-        #         self.b.append(y)
+        self.n_games = 1
+        self.n_qubits = 0
 
         self.game_type = game_type
 
@@ -25,8 +21,8 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.possible_answers[1] = (0, 1)
 
         self.responses = list(
-            itertools.product(list(range(n_questions)),
-                              repeat=self.num_players))
+            itertools.product(list(range(2)),
+                              repeat=self.num_players * self.n_questions //2))
 
     @NonLocalGame.override
     def reset(self):
@@ -56,15 +52,9 @@ class Environment(NonLocalGame.abstractEnvironment):
         """ plays 16 different strategies,evaluate each and :returns: the best accuracy from all strategies """
         accuracies = []
         result = []
-        # for a in range(len(self.possible_answers)):
-        #     for b in range(len(self.possible_answers)):
-        #         for q in range(len(self.game_type)):
-        #             question = [self.a[q], self.b[q]]
-        #             result.append(self.evaluate(question, (a, b)))
-        #         accuracies.append(self.calc_accuracy(result))
-        #         result = []
 
-        # TODO: toto treba checknut ci je to ok ?! 
+
+        response_list = self.response_rek(self.n_questions)
         for r_A in self.responses:
             for r_B in self.responses:
                 for x, question in enumerate(self.questions):
@@ -73,26 +63,36 @@ class Environment(NonLocalGame.abstractEnvironment):
                 accuracies.append(self.calc_accuracy(result))
                 result = []
 
-        # for q in range(len(self.game_type)):
-        #     question = [self.a[q], self.b[q]]
-        #     for a in self.possible_answers[question[0]]:
-        #         self.possible_answers[question[0]] = a
-        #         for b in self.possible_answers[question[1]]:
-        #             self.possible_answers[question[1]] = b
-        #             result.append(self.evaluate(question, (a, b)))
-        #
-        #     accuracies.append(self.calc_accuracy(result))
-        #     result = []
-
-        # print(accuracies)
         return max(accuracies), min(accuracies)
+
+    def response_rek(self, n):
+        if (n == 0): pass
+        else:
+            for r in self.responses:
+                yield r
+                self.response_rek(n - 1)
+
+
+
+def rule(a, b, x, y):
+    return (a != b) == (x and y)
+
+
+def create(game_type):
+    game = [[0 for _ in range(len(game_type)) for __ in range(len(game_type))] for ___ in range(len(game_type)) for ____ in range(len(game_type))]
+    for y1, riadok1 in enumerate(game_type):
+        for x1, cell1 in enumerate(riadok1):
+            for y2, riadok2 in enumerate(game_type):
+            # for x1, cell1 in enumerate(riadok1):
+                for x2, cell2 in enumerate(riadok2):
+                    if (cell1 == cell2 and cell1 == 1): game[y1 * y2][x1 * x2] = 1
+    return game
 
 
 if __name__ == '__main__':
-    game_type = [[0, 1, 1, 1],
-                 [0, 1, 0, 0],
-                 [1, 0, 1, 0],
-                 [1, 0, 0, 0]]
-
-    env = Environment(game_type, 2,2)
+    game_type = [[1, 0, 0, 1],
+                 [1, 0, 0, 1],
+                 [1, 0, 0, 1],
+                 [0, 1, 1, 0]]
+    env = Environment(game_type, 2, 2)
     print(env.play_all_strategies())

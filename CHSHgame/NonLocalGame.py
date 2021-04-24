@@ -58,8 +58,8 @@ class abstractEnvironment(ABC):
         self.counter = 1
         self.history_actions = []
         self.state = self.initial_state.copy()
-        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(self.n_questions * self.n_players)])
-        self.repr_state = np.array([x for _ in range(self.n_players ** 2) for x in self.state], dtype=np.complex64)
+        self.accuracy = self.calc_accuracy([self.measure_analytic() for _ in range(len(self.game_type))])
+        self.repr_state = np.array([x for _ in range(len(self.game_type)) for x in self.state], dtype=np.complex64)
         return self.repr_state
 
     @abstractmethod
@@ -74,12 +74,11 @@ class abstractEnvironment(ABC):
 
     def calc_accuracy(self, result):
         """ :returns winning accuracy / win rate based on winning game_type """
-        if self.n_games == 1:
-            result = self.EPR_result(result)
-        else: return self.paralel_non_local(result)
-        return self.calc_acc(result)
+        if self.n_games == 1: return self.calc_acc(self.EPR_result(result))
+        return self.paralel_non_local(result)
 
     def calc_acc(self, result):
+        """ Calculates accurary by going through rules of the game given by game_type matrix """
         win_rate = 0
         for x, riadok in enumerate(self.game_type):
             for y, stlpec in enumerate(riadok):
@@ -90,44 +89,48 @@ class abstractEnvironment(ABC):
     def EPR_result(self, result):
         """ If state is bigger than with 2 qubits, we must reduce state so that it matches the scale of the game.
         This functions reduces bigger states result to smaller one by taking the first bit. """
-        if self.n_qubits == 2: return result
+        if self.n_qubits <= 2: return result
 
         new_result = []
         for r, row in enumerate(result):
             new_result.append([])
             for c in range(0, len(row), self.reduce_by * 2):
                 new_result[r].append(
-                    sum(result[r][c:(c + self.reduce_by // 2)]) + sum(result[r][c + self.reduce_by:(c + self.reduce_by + self.reduce_by // 2)]))
+                    sum(result[r][c:(c + self.reduce_by // 2)]) +
+                    sum(result[r][c + self.reduce_by:(c + self.reduce_by + self.reduce_by // 2)])
+                )
                 new_result[r].append(
-                    sum(result[r][(c + self.reduce_by // 2): c + self.reduce_by]) + sum(
-                        result[r][(c + self.reduce_by + self.reduce_by // 2):(c + self.reduce_by * 2)]))
+                    sum(result[r][(c + self.reduce_by // 2): c + self.reduce_by]) +
+                    sum(result[r][(c + self.reduce_by + self.reduce_by // 2):(c + self.reduce_by * 2)])
+                    )
 
         return new_result
 
     def paralel_non_local(self, result):
-        """ works for 2 paralel games, selects probabilities to paralel games from on"""
-        assert self.n_games == 2 and self.n_qubits >= 4
+        """ selects probabilities for paralel games """
 
-        dividing_to_paralel = dict()
-        for state in result:
-            for x in range(len(state)):
-                dividing_to_paralel[self.possible_states[x]] = self.state[x]
-
-        new_result_1 = []
-        new_result_2 = []
-        for s in range(len(result)):
-            paralel_1 = dict()
-            paralel_2 = dict()
-            for key in dividing_to_paralel.keys():
-                try: paralel_1[str(key[0]) + str(key[2])] += dividing_to_paralel[key]
-                except KeyError: paralel_1[str(key[0]) + str(key[2])] = dividing_to_paralel[key]
-                try: paralel_2[str(key[1]) + str(key[3])] += dividing_to_paralel[key]
-                except KeyError: paralel_2[str(key[1]) + str(key[3])] = dividing_to_paralel[key]
-
-            new_result_1.append(list(paralel_1.values()))
-            new_result_2.append(list(paralel_2.values()))
-
-        return float(self.calc_acc(new_result_1) * self.calc_acc(new_result_2))
+        return self.calc_acc(result)
+        # dividing_to_paralel = dict()
+        # for state in result:
+        #     for x in range(len(state)):
+        #         dividing_to_paralel[self.possible_states[x]] = state[x]
+        #
+        # new_result_1 = []
+        # new_result_2 = []
+        # for s in range(len(result)):
+        #     paralel_1 = dict()
+        #     paralel_2 = dict()
+        #     for key in dividing_to_paralel.keys():
+        #         # TODO: Skontrolovat ci to funguje spravne
+        #         try: paralel_1[str(key[0]) + str(key[2])] += dividing_to_paralel[key]
+        #         except KeyError: paralel_1[str(key[0]) + str(key[2])] = dividing_to_paralel[key]
+        #         try: paralel_2[str(key[1]) + str(key[3])] += dividing_to_paralel[key]
+        #         except KeyError: paralel_2[str(key[1]) + str(key[3])] = dividing_to_paralel[key]
+        #
+        #     new_result_1.append(list(paralel_1.values()))
+        #     new_result_2.append(list(paralel_2.values()))
+        #
+        # return self.calc_acc(new_result_1) * self.calc_acc(new_result_2)
 
     def n_qubits_from_state(self):
         """ There are 2^n states of n qubits, to get the n, we need to make log2 from state"""
@@ -140,8 +143,8 @@ class abstractEnvironment(ABC):
         for action in self.history_actions:
             if action in {"xxr0"}:  # ending action
                 pass
-            elif action in {"smallerAngle", "biggerAngle"}:
-                count += 0.5
+            # elif action in {"smallerAngle", "biggerAngle"}:
+            #     count += 0.5
             else:
                 count += 1
 
@@ -161,36 +164,18 @@ class abstractEnvironment(ABC):
         else:
             return IGate
 
-    def reward_only_negative(self, difference):
-        return -1
 
     def reward_only_difference(self, difference):
-        # reward is the increase in accuracy
+        # reward is the increase in winning probability
         return difference
 
     def reward_qubic(self, difference):
         return (difference ** 3) * 1000
 
-    def reward_complex1(self, difference):
-        reward = difference
-        if np.round(reward, 5) <= np.round(0, 5):
-            reward -= self.reward_only_negative(difference)
-        else:
-            reward += difference
-        return reward
-
-    def reward_complex2(self, difference):
-        reward = self.reward_qubic(difference)
-        if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
-            # done = True
-            self.max_acc = self.accuracy
-            reward += 5 * (1 / (self.count_gates() + 1)) * self.accuracy
-        return reward
-
-    def rewardOnlyBest(self, difference):
+    def reward_only_best(self, difference):
+        """ reward only if it its better than results before """
         reward = difference * 100
 
-        # always award only the best (who is best changes through evolution)
         if np.round(self.accuracy, 2) > np.round(self.max_acc, 2):
             reward += 50 * (self.max_acc - self.accuracy)
             self.min_gates = len(self.history_actions)
@@ -199,7 +184,6 @@ class abstractEnvironment(ABC):
             if self.min_gates > len(self.history_actions):
                 self.min_gates = len(self.history_actions)
 
-        # end when it has applied max number of gates / xxr0
         if self.counter == self.max_gates or self.history_actions[-1] == "xxr0":
             if np.round(self.max_acc, 2) == np.round(self.accuracy, 2) and self.min_gates == self.count_gates():
                 reward = 5000 * (1 / (self.count_gates() + 1)) * self.accuracy
@@ -211,7 +195,6 @@ class abstractEnvironment(ABC):
 
     def reward_combined(self, difference):
         reward = difference
-        # skonci, ak uz ma maximalny pocet bran
         if np.round(self.accuracy, 2) >= np.round(self.max_acc, 2):
             self.max_acc = self.accuracy
             if self.history_actions[-1] == "xxr0":
@@ -221,6 +204,7 @@ class abstractEnvironment(ABC):
         return reward
 
     def complex_array_to_real(self, inp_array):
+        """ decomposes complex array into array of real numbers with double size. """
         return np.concatenate((np.real(inp_array), np.imag(inp_array)))
 
 
@@ -234,7 +218,7 @@ import numpy as np
 
 
 class Game:
-    """ creates CHSH game framework for easier manipulation """
+    """ creates framework for easier manipulation """
 
     def __init__(self, scaler=None, round_to=2, batch_size=32):
         self.scaler = scaler
@@ -271,6 +255,7 @@ class Game:
             rew_accum += reward
         try: print(env.memory_state[tuple(env.history_actions)][2])
         except: print(env.history_actions)
+        # print("state: ", env.repr_state)
         return env.accuracy, rew_accum
 
     def evaluate_train(self, N, agent, env):
@@ -341,7 +326,7 @@ import itertools
 
 
 def game_with_rows_all_zeroes(game):
-    """ Controls whether there is not full zero row in game """
+    """ Checks whether there is not full zero row in game """
     for row in game:
         if 1 not in row or 0 not in row:
             return True
@@ -354,7 +339,7 @@ def generate_only_interesting_games(size=4, n_questions=2):
     product = list(itertools.product(list(range(n_questions)), repeat=size))
     games = list(itertools.product(product, repeat=size))
     print(len(games))
-    if size != 4: return games  # this function works best only for size 4, in bigger scenarios its harder to tell which game is interesting
+    if size != 4: return games  # this function works only for size games of size 4, in bigger scenarios its harder to tell which game is symmetric so easily
     interesting_games = dict()
     for game in games:
         if game_with_rows_all_zeroes(game): continue  # hry, ktore maju nulove riadky su nezaujimave tiez
@@ -385,6 +370,9 @@ import NlgGeneticOptimalization
 
 
 def quantumGEN(states, game):
+    """ Plays nonlocal game using genetic algorithm multiple -lenght(states)- times and returns the best and the worst result.
+     Works good for small nonlocal games with 1epr pair. For bigger games reinforcement learning is much better choice. """
+
     best = 0
     worst = 1
     min_state = None
@@ -426,6 +414,8 @@ def quantumGEN(states, game):
 
 
 def quantumNN(states, agent_type, which, game):
+    """ Plays nonlocal game using reinforcement learning multiple -lenght(states)- times and returns the best and the worst result. """
+
     # ACTIONS2 = ['r' + axis + str(180 / 32 * i) for i in range(1, 16) for axis in 'y']
     # ACTIONS = ['r' + axis + str(-180 / 32 * i) for i in range(1, 16) for axis in 'y']
     ACTIONS2 = ['r' + axis + "0" for axis in 'xyz']
@@ -511,11 +501,12 @@ def quantumNN(states, agent_type, which, game):
 
 
 def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
-    """ Learns to play the best quantum strategy according to game """
-    if n_qubits == 2:
+    """ Learns to play the best quantum strategy according to game
+     for 2 qubits uses genetic alg., for more uses reinforcement learning"""
+    if n_qubits == 2:  # for small games use genetic algorithm
         states = [np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64), np.array([1, 0, 0, 0], dtype=np.complex64)]
         best, worst, min_state, max_state, min_strategy, max_strategy = quantumGEN(states, game)
-    else:
+    else: # for bigger games use reinforcement learning
         states = [np.array(
             [0 + 0j, 0 + 0j, 0.707 + 0j, 0 + 0j, -0.707 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j, 0 + 0j,
              0 + 0j])]
@@ -524,6 +515,7 @@ def play_quantum(game, which="best", agent_type=BasicAgent, n_qubits=2):
 
 
 def calc_difficulty_of_game(game):
+    """ Difficulty of the input game is calculated as a sum of all 1's in the whole game (evaluation) matrix"""
     diff = 0
     for row in game:
         for x in row:
@@ -533,10 +525,13 @@ def calc_difficulty_of_game(game):
 
 
 def to_list(tuple):
+    """ converts tuple to list """
     return [list(x) for x in tuple]
 
 
 def categorize(cutGames):
+    """ categorizes input games according to the best and worst classical strategy probabilities , e.g. (0.75,0.25) is the category for
+    CHSH game, because the best possible classical strategy will give you 0.75 success probability, the worst is 0.25 classicaly."""
     categories = dict()
     for game in cutGames:
         classical_max_min = play_deterministic(game)
@@ -550,6 +545,7 @@ def categorize(cutGames):
 
 
 def convert(list):
+    """ Converts list to categories. """
     categories = dict()
     for dict_row in list:
         try:
@@ -565,6 +561,9 @@ from database import DB
 
 def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_each_category=5, best_or_worst="best", agent_type=BasicAgent,
                              n_qubits=2):
+    """ Finds interesting games by searching through the space of possible interesting games. Compares maximum classical with quantum.
+    Puts results into local database"""
+
     def playGame():
         classical_max, classical_min = play_deterministic(game_type, best_or_worst)
         quantum_max, quantum_min, min_state, max_state, min_strategy, max_strategy = play_quantum(game_type, best_or_worst,
@@ -585,7 +584,7 @@ def max_entangled_difference(n_players=2, n_questions=2, choose_n_games_from_eac
                   max_state=max_state,
                   min_strategy=min_strategy, max_strategy=max_strategy, game=game_type)
 
-    """ Prints evaluation tactics that had the biggest difference between classical and quantum strategy """
+
     assert n_qubits == 2 or n_qubits == 4
     db = DB.CHSHdb()
 

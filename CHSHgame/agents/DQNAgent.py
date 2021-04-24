@@ -6,6 +6,7 @@ from models.MLPModel import MLP
 
 ### The experience replay memory ###
 class ReplayBuffer:
+    """ Creates replay buffer to learn from previous episodes"""
     def __init__(self, obs_dim, act_dim, size):
         self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float32)
         self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float32)
