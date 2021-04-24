@@ -27,6 +27,8 @@ I built two Reinforcement learning agents to search these environments:
 
 * DQN agent
 
+* For simple games like CHSH one, one can use another approach like optimalizing through genetic algortihm. 
+
 On top of those I built Genetic algorithm that is able to optimalize agents hyperparameters (and also choose the best reward function)
 
 
