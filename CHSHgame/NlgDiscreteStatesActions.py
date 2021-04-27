@@ -55,7 +55,7 @@ class Environment(NonLocalGame.abstractEnvironment):
         self.min_found_strategy = []
         self.best_or_worst = best_or_worst
 
-        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=self.n_players*self.n_games)) # combinations of questions
+        self.questions = list(itertools.product(list(range(self.n_questions)), repeat=round(np.log2(len(self.game_type))))) # combinations of questions
         print(self.questions)
         self.memory_state = dict() # memoization of calculation, repr_state, accuracies
         self.reward_funcion = reward_function
@@ -68,7 +68,7 @@ class Environment(NonLocalGame.abstractEnvironment):
     @NonLocalGame.override
     def reset(self):
         self.history_actions_anneal = []
-        return self.complex_array_to_real(super().reset())  # + np.array([len(self.history_actions)], dtype=np.float64)
+        return self.complex_array_to_real(super().reset())
 
     def calculate_state(self, history_actions, anneal=False):
         """ Calculates the state according to previous actions in parameter history_actions """
@@ -103,11 +103,12 @@ class Environment(NonLocalGame.abstractEnvironment):
                 # apply action to state
                 operation = []
 
+                second_player_pos = round(np.log2(len(self.game_type)))//self.n_questions
                 if gate == CXGate:
                     ctrl = int(action[-1] != "r")
                     if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
                         operation = np.kron(CXGate(ctrl_state=ctrl).to_matrix(), np.identity(I_length))
-                    if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
+                    if (q[second_player_pos] == 0 and to_whom == 'b0') or (q[second_player_pos] == 1 and to_whom == 'b1'):
                         operation = np.kron(np.identity(I_length), CXGate(ctrl_state=ctrl).to_matrix())
                 else:
                     if (q[0] == 0 and to_whom == 'a0') or (q[0] == 1 and to_whom == 'a1'):
@@ -115,7 +116,7 @@ class Environment(NonLocalGame.abstractEnvironment):
                         else: calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
                         if len(self.state) != 4: operation = np.kron(calc_operation, np.identity(I_length))
                         else: operation = calc_operation
-                    if (q[1] == 0 and to_whom == 'b0') or (q[1] == 1 and to_whom == 'b1'):
+                    if (q[second_player_pos] == 0 and to_whom == 'b0') or (q[second_player_pos] == 1 and to_whom == 'b1'):
                         if rotate_ancilla:  calc_operation = np.kron(np.identity(2), gate((gate_angle * pi / 180).item()).to_matrix())
                         else: calc_operation = np.kron(gate((gate_angle * pi / 180).item()).to_matrix(), np.identity(2))
                         if len(self.state) != 4: operation = np.kron(np.identity(I_length), calc_operation)
@@ -199,7 +200,7 @@ class Environment(NonLocalGame.abstractEnvironment):
         if not done: self.counter += 1
         return to_complex, reward, done
 
-    def anneal(self, steps=100, t_start=2, t_end=0.001):
+    def anneal(self, steps=30, t_start=2, t_end=0.001):
         """ Finds the maximal value of the fitness function by
         executing the simulated annealing algorithm.
         Returns a state (e.g. x) for which fitness(x) is maximal. """
@@ -220,7 +221,7 @@ class Environment(NonLocalGame.abstractEnvironment):
         last = [self.history_actions_anneal[-1][:4] + str(x)]
         return self.calc_accuracy(self.calculate_state(self.history_actions_anneal[:-1] + last, anneal=True))
 
-    def neighbors(self, x, span=30, delta=0.1):
+    def neighbors(self, x, span=30, delta=0.5):
         """ Creates neighboring gate angle to angle x"""
         res = []
         if x > -span + 3 * delta: res += [x - i * delta for i in range(1, 4)]
@@ -262,9 +263,15 @@ if __name__ == '__main__':
                  [1, 0, 0, 1],
                  [0, 1, 1, 0]]
 
-    max_gates = 10
+    max_gates = 15
     round_to = 6
+
+    # game_type = create(game_type)
+
     state = np.array([0, 1 / sqrt(2), -1 / sqrt(2), 0], dtype=np.complex64)
+    # state = np.array([ 0+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, -0.5+0j, 0+0j, 0+0j, 0.5+0j, 0+0j, 0+0j, 0+0j ], dtype=np.complex64)
+    #
+
     env = Environment(n_questions, game_type, max_gates, initial_state=state,
                       reward_function=Environment.reward_only_difference,
                       anneal=True, n_games=1)
