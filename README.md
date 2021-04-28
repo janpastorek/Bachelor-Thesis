@@ -27,7 +27,7 @@ I built two Reinforcement learning agents to search these environments:
 
 * DQN agent
 
-* For games with only 1 shared pair like, one can use another approach - optimalizing already chosen gates through genetic algortihm. 
+* For games with only one qubit per person, one can use another approach - optimalizing already chosen gates through genetic algortihm. 
 
 On top of those I built Genetic algorithm that is able to optimalize agents hyperparameters (and also choose the best reward function)
 
